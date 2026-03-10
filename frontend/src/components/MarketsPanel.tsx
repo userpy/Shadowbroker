@@ -3,9 +3,18 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Droplet, ChevronDown, ChevronUp } from 'lucide-react';
+import type { AppLanguage } from "@/lib/threatRegulations";
 
-const MarketsPanel = React.memo(function MarketsPanel({ data }: { data: any }) {
+const MarketsPanel = React.memo(function MarketsPanel({
+    data,
+    language,
+}: {
+    data: any;
+    language?: AppLanguage;
+}) {
     const [isMinimized, setIsMinimized] = useState(true);
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
 
     const stocks = data?.stocks || {};
     const oil = data?.oil || {};
@@ -22,7 +31,7 @@ const MarketsPanel = React.memo(function MarketsPanel({ data }: { data: any }) {
                 className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-900/50 transition-colors border-b border-gray-800/50"
                 onClick={() => setIsMinimized(!isMinimized)}
             >
-                <span className="text-[10px] text-gray-500 font-mono tracking-widest">GLOBAL MARKETS</span>
+                <span className="text-[10px] text-gray-500 font-mono tracking-widest">{tr("ГЛОБАЛЬНЫЕ РЫНКИ", "GLOBAL MARKETS")}</span>
                 <button className="text-gray-500 hover:text-white transition-colors">
                     {isMinimized ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                 </button>
@@ -38,7 +47,7 @@ const MarketsPanel = React.memo(function MarketsPanel({ data }: { data: any }) {
                     >
                         <div className="border-b border-gray-800 pb-3">
                             <h2 className="text-xs font-bold tracking-widest text-cyan-400 flex items-center gap-2 mb-2">
-                                <TrendingUp className="text-cyan-500" size={14} /> DEFENSE SEC TICKERS
+                                <TrendingUp className="text-cyan-500" size={14} /> {tr("ТИКЕРЫ ОБОРОННОГО СЕКТОРА", "DEFENSE SEC TICKERS")}
                             </h2>
                             <div className="mt-3 flex flex-col gap-2">
                                 {Object.entries(stocks).map(([ticker, info]: [string, any]) => (
@@ -58,7 +67,7 @@ const MarketsPanel = React.memo(function MarketsPanel({ data }: { data: any }) {
 
                         <div>
                             <h2 className="text-xs font-bold tracking-widest text-cyan-400 flex items-center gap-2 mb-2">
-                                <Droplet className="text-cyan-500" size={14} /> COMMODITY INDEX
+                                <Droplet className="text-cyan-500" size={14} /> {tr("СЫРЬЕВОЙ ИНДЕКС", "COMMODITY INDEX")}
                             </h2>
                             <div className="mt-2 flex flex-col gap-2">
                                 {Object.entries(oil).map(([name, info]: [string, any]) => (

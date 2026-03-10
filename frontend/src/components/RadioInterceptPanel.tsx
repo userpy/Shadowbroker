@@ -4,8 +4,23 @@ import { API_BASE } from "@/lib/api";
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RadioReceiver, Activity, Play, Square, FastForward, ChevronDown, ChevronUp } from 'lucide-react';
+import type { AppLanguage } from "@/lib/threatRegulations";
 
-export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesdropping, eavesdropLocation, cameraCenter }: { data: any, isEavesdropping?: boolean, setIsEavesdropping?: (val: boolean) => void, eavesdropLocation?: { lat: number, lng: number } | null, cameraCenter?: { lat: number, lng: number } | null }) {
+export default function RadioInterceptPanel({
+    data,
+    isEavesdropping,
+    setIsEavesdropping,
+    eavesdropLocation,
+    cameraCenter,
+    language,
+}: {
+    data: any,
+    isEavesdropping?: boolean,
+    setIsEavesdropping?: (val: boolean) => void,
+    eavesdropLocation?: { lat: number, lng: number } | null,
+    cameraCenter?: { lat: number, lng: number } | null,
+    language?: AppLanguage,
+}) {
     const [isMinimized, setIsMinimized] = useState(true);
     const [feeds, setFeeds] = useState<any[]>([]);
     const [activeFeed, setActiveFeed] = useState<any | null>(null);
@@ -14,6 +29,26 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [volume, setVolume] = useState(0.8);
     const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
+
+    function playFeed(feed: any) {
+        if (isScanning && scanTimeoutRef.current) {
+            clearTimeout(scanTimeoutRef.current);
+            setIsScanning(false);
+        }
+        setActiveFeed(feed);
+        setIsPlaying(true);
+    }
+
+    function stopFeed() {
+        if (isScanning && scanTimeoutRef.current) {
+            clearTimeout(scanTimeoutRef.current);
+            setIsScanning(false);
+        }
+        setActiveFeed(null);
+        setIsPlaying(false);
+    }
 
     // Fetch the top feeds on mount
     useEffect(() => {
@@ -42,7 +77,7 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                     // Show a temporary state
                     setFeeds(prev => [{
                         id: 'scanning-nearest',
-                        name: 'TRIANGULATING SIGNAL...',
+                        name: tr('ТРИАНГУЛЯЦИЯ СИГНАЛА...', 'TRIANGULATING SIGNAL...'),
                         location: `LAT:${eavesdropLocation.lat.toFixed(2)} LNG:${eavesdropLocation.lng.toFixed(2)}`,
                         listeners: 0,
                         category: 'SIGINT'
@@ -83,9 +118,9 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                                         const clean = prev.filter(f => f.id !== 'scanning-nearest');
                                         return [{
                                             id: `failed-${Date.now()}`,
-                                            name: `NO RECENT COMMS (${system.shortName})`,
+                                            name: tr(`НЕТ НЕДАВНИХ ПЕРЕГОВОРОВ (${system.shortName})`, `NO RECENT COMMS (${system.shortName})`),
                                             location: `${system.city}, ${system.state}`,
-                                            category: 'DEAD AIR',
+                                            category: tr('ТИШИНА ЭФИРА', 'DEAD AIR'),
                                             listeners: 0
                                         }, ...clean];
                                     });
@@ -97,9 +132,9 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                                 const clean = prev.filter(f => f.id !== 'scanning-nearest');
                                 return [{
                                     id: `failed-${Date.now()}`,
-                                    name: 'NO LOCAL REPEATERS FOUND',
-                                    location: 'UNKNOWN',
-                                    category: 'ENCRYPTED / VOID',
+                                    name: tr('ЛОКАЛЬНЫЕ РЕПИТЕРЫ НЕ НАЙДЕНЫ', 'NO LOCAL REPEATERS FOUND'),
+                                    location: tr('НЕИЗВЕСТНО', 'UNKNOWN'),
+                                    category: tr('ШИФР / ПУСТО', 'ENCRYPTED / VOID'),
                                     listeners: 0
                                 }, ...clean];
                             });
@@ -112,24 +147,6 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
             fetchNearest();
         }
     }, [eavesdropLocation]);
-
-    const playFeed = (feed: any) => {
-        if (isScanning && scanTimeoutRef.current) {
-            clearTimeout(scanTimeoutRef.current);
-            setIsScanning(false);
-        }
-        setActiveFeed(feed);
-        setIsPlaying(true);
-    };
-
-    const stopFeed = () => {
-        if (isScanning && scanTimeoutRef.current) {
-            clearTimeout(scanTimeoutRef.current);
-            setIsScanning(false);
-        }
-        setActiveFeed(null);
-        setIsPlaying(false);
-    };
 
     // Handle Audio Element Play/Stop
     useEffect(() => {
@@ -257,7 +274,7 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
             >
                 <div className="flex items-center gap-2 text-cyan-400">
                     <RadioReceiver size={14} className={isPlaying ? "animate-pulse" : ""} />
-                    <span className="text-[10px] font-mono tracking-widest font-semibold">SIGINT INTERCEPT</span>
+                    <span className="text-[10px] font-mono tracking-widest font-semibold">{tr("РАДИОПЕРЕХВАТ SIGINT", "SIGINT INTERCEPT")}</span>
                     {isPlaying && <Activity size={12} className="text-red-500 animate-pulse ml-2" />}
                 </div>
                 <button className="text-cyan-500 hover:text-cyan-300 transition-colors">
@@ -278,16 +295,16 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex flex-col">
                                     <span className="text-xs text-cyan-300 font-mono tracking-wide">
-                                        {activeFeed ? activeFeed.name : "NO SIGNAL"}
+                                        {activeFeed ? activeFeed.name : tr("НЕТ СИГНАЛА", "NO SIGNAL")}
                                     </span>
                                     <span className="text-[9px] text-gray-500 font-mono">
-                                        {activeFeed ? `LOCATION: ${activeFeed.location.toUpperCase()}` : "AWAITING TUNING..."}
+                                        {activeFeed ? `${tr("ЛОКАЦИЯ", "LOCATION")}: ${activeFeed.location.toUpperCase()}` : tr("ОЖИДАНИЕ НАСТРОЙКИ...", "AWAITING TUNING...")}
                                     </span>
                                 </div>
                                 {activeFeed && (
                                     <div className="flex items-center gap-1 bg-red-950/40 border border-red-900/50 px-2 py-0.5 rounded text-[9px] text-red-400 font-mono">
                                         <Activity size={10} className="animate-pulse" />
-                                        LIVE
+                                        {tr("ПРЯМОЙ ЭФИР", "LIVE")}
                                     </div>
                                 )}
                             </div>
@@ -305,15 +322,15 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                                     className={`px-3 py-1.5 rounded text-[10px] font-mono border tracking-wider flex items-center gap-2 ${isScanning ? 'bg-cyan-900/60 border-cyan-400 text-cyan-300' : 'border-cyan-800 text-cyan-600 hover:border-cyan-600'} transition-colors`}
                                 >
                                     <FastForward size={12} />
-                                    {isScanning ? 'SCANNING...' : 'AUTO SCAN'}
+                                    {isScanning ? tr('СКАНИРОВАНИЕ...', 'SCANNING...') : tr('АВТОСКАН', 'AUTO SCAN')}
                                 </button>
 
                                 <button
                                     onClick={() => setIsEavesdropping && setIsEavesdropping(!isEavesdropping)}
                                     className={`px-3 py-1.5 rounded text-[10px] font-mono border tracking-wider flex items-center gap-2 ${isEavesdropping ? 'bg-red-900/60 border-red-500 text-red-300 animate-pulse' : 'border-cyan-800 text-cyan-600 hover:border-cyan-600'} transition-colors`}
-                                    title="Click on the globe to intercept local signals"
+                                    title={tr("Нажмите и кликните по карте для локального перехвата", "Click and then click the map to intercept local signals")}
                                 >
-                                    EAVESDROP
+                                    {tr("ПРОСЛУШКА", "EAVESDROP")}
                                 </button>
 
                                 <input
@@ -322,7 +339,7 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                                     value={volume}
                                     onChange={(e) => setVolume(parseFloat(e.target.value))}
                                     className="w-20 accent-cyan-500"
-                                    title="Volume"
+                                    title={tr("Громкость", "Volume")}
                                 />
                             </div>
 
@@ -350,7 +367,7 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                         {/* Feed List */}
                         <div className="flex-col overflow-y-auto styled-scrollbar max-h-64 p-2">
                             {feeds.length === 0 ? (
-                                <div className="text-[10px] text-cyan-700 font-mono text-center p-4">SEARCHING FREQUENCIES...</div>
+                                <div className="text-[10px] text-cyan-700 font-mono text-center p-4">{tr("ПОИСК ЧАСТОТ...", "SEARCHING FREQUENCIES...")}</div>
                             ) : (
                                 feeds.map((feed: any, idx: number) => (
                                     <div
@@ -371,7 +388,7 @@ export default function RadioInterceptPanel({ data, isEavesdropping, setIsEavesd
                                                 <Activity size={10} />
                                                 {feed.listeners.toLocaleString()}
                                             </span>
-                                            <span className="text-[8px] text-gray-600 font-mono mt-0.5">LSTN</span>
+                                            <span className="text-[8px] text-gray-600 font-mono mt-0.5">{tr("СЛУШ.", "LSTN")}</span>
                                         </div>
                                     </div>
                                 ))

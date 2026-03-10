@@ -1,6 +1,7 @@
 "use client";
 
 import { API_BASE } from "@/lib/api";
+import type { AppLanguage } from "@/lib/threatRegulations";
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import Map, { Source, Layer, MapRef, ViewState, Popup, Marker } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -97,6 +98,18 @@ const svgHeliGrey = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="h
 // Grey icon map for grounded aircraft
 const GROUNDED_ICON_MAP: Record<string, string> = { heli: 'svgHeliGrey', turboprop: 'svgTurbopropGrey', bizjet: 'svgBizjetGrey', airliner: 'svgAirlinerGrey' };
 
+const MISSION_LABELS: Record<string, { ru: string; en: string }> = {
+    military_recon: { ru: '🔴 ВОЕННАЯ РАЗВЕДКА', en: '🔴 MILITARY RECON' },
+    military_sar: { ru: '🔴 ВОЕННАЯ SAR', en: '🔴 MILITARY SAR' },
+    sar: { ru: '🔷 SAR-СЪЕМКА', en: '🔷 SAR IMAGING' },
+    sigint: { ru: '🟠 СИГНАЛЬНАЯ / ELINT', en: '🟠 SIGINT / ELINT' },
+    navigation: { ru: '🔵 НАВИГАЦИЯ', en: '🔵 NAVIGATION' },
+    early_warning: { ru: '🟣 РАННЕЕ ПРЕДУПРЕЖДЕНИЕ', en: '🟣 EARLY WARNING' },
+    commercial_imaging: { ru: '🟢 КОММЕРЧЕСКАЯ СЪЕМКА', en: '🟢 COMMERCIAL IMAGING' },
+    space_station: { ru: '🏠 КОСМИЧЕСКАЯ СТАНЦИЯ', en: '🏠 SPACE STATION' },
+    communication: { ru: '📡 СВЯЗЬ', en: '📡 COMMUNICATION' },
+};
+
 // ICAO type code -> aircraft shape classification
 const HELI_TYPES = new Set(['R22', 'R44', 'R66', 'B06', 'B05', 'B47G', 'B105', 'B212', 'B222', 'B230', 'B407', 'B412', 'B429', 'B430', 'B505', 'BK17', 'S55', 'S58', 'S61', 'S64', 'S70', 'S76', 'S92', 'A109', 'A119', 'A139', 'A169', 'A189', 'AW09', 'EC20', 'EC25', 'EC30', 'EC35', 'EC45', 'EC55', 'EC75', 'H125', 'H130', 'H135', 'H145', 'H155', 'H160', 'H175', 'H215', 'H225', 'AS32', 'AS35', 'AS50', 'AS55', 'AS65', 'MD52', 'MD60', 'MDHI', 'MD90', 'NOTR', 'HUEY', 'GAMA', 'CABR', 'EXE', 'R300', 'R480', 'LAMA', 'ALLI', 'PUMA', 'NH90', 'CH47', 'UH1', 'UH60', 'AH64', 'MI8', 'MI24', 'MI26', 'MI28', 'KA52', 'K32', 'LYNX', 'WILD', 'MRLX', 'A149', 'A119']);
 const TURBOPROP_TYPES = new Set(['AT43', 'AT45', 'AT72', 'AT73', 'AT75', 'AT76', 'B190', 'B350', 'BE20', 'BE30', 'BE40', 'BE9L', 'BE99', 'C130', 'C160', 'C208', 'C212', 'C295', 'CN35', 'D228', 'D328', 'DHC2', 'DHC3', 'DHC4', 'DHC5', 'DHC6', 'DHC7', 'DHC8', 'DO28', 'DH8A', 'DH8B', 'DH8C', 'DH8D', 'E110', 'E120', 'F27', 'F406', 'F50', 'G159', 'G73T', 'J328', 'JS31', 'JS32', 'JS41', 'L188', 'MA60', 'M28', 'N262', 'P68', 'P180', 'PA31', 'PA42', 'PC12', 'PC21', 'PC24', 'S2', 'S340', 'SF34', 'SF50', 'SW4', 'TRIS', 'TBM7', 'TBM8', 'TBM9', 'C30J', 'C5M', 'AN12', 'AN24', 'AN26', 'AN30', 'AN32', 'IL18', 'L410', 'Y12', 'BALL', 'AEST', 'AC68', 'AC80', 'AC90', 'AC95', 'AC11', 'C172', 'C182', 'C206', 'C210', 'C310', 'C337', 'C402', 'C414', 'C421', 'C425', 'C441', 'M20P', 'M20T', 'PA28', 'PA32', 'PA34', 'PA44', 'PA46', 'PA60', 'P28A', 'P28B', 'P28R', 'P32R', 'P46T', 'SR20', 'SR22', 'DA40', 'DA42', 'DA62', 'RV10', 'BE33', 'BE35', 'BE36', 'BE55', 'BE58', 'DR40', 'TB20', 'AA5']);
@@ -185,7 +198,7 @@ const MISSION_ICON_MAP: Record<string, string> = {
     'commercial_imaging': 'sat-com', 'space_station': 'sat-station'
 };
 
-const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, selectedEntity, onMouseCoords, onRightClick, regionDossier, regionDossierLoading, onViewStateChange, measureMode, onMeasureClick, measurePoints }: any) => {
+const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, selectedEntity, onMouseCoords, onRightClick, regionDossier, regionDossierLoading, onViewStateChange, measureMode, onMeasureClick, measurePoints, language }: any) => {
     const mapRef = useRef<MapRef>(null);
 
     const [viewState, setViewState] = useState<ViewState>({
@@ -227,6 +240,17 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
     const prevCallsign = useRef<string | null>(null);
     const [shipClusters, setShipClusters] = useState<any[]>([]);
     const [eqClusters, setEqClusters] = useState<any[]>([]);
+    const lang: AppLanguage = language || "ru";
+    const translate = (ru: string, en: string) => (lang === "ru" ? ru : en);
+    const levelLabel = translate('УРОВЕНЬ', 'LVL');
+    const alertLevelLabel = translate('!! УРОВЕНЬ', '!! LVL');
+    const sourceLabel = translate('ИСТОЧНИК', 'SOURCE');
+    const typeLabel = translate('ТИП', 'Type');
+    const countryLabel = translate('СТРАНА', 'Country');
+    const altitudeLabel = translate('ВЫСОТА', 'Altitude');
+    const activeThreatsLabel = translate('АКТИВНЫЕ УГРОЗЫ В РАЙОНЕ', 'ACTIVE THREATS IN AREA');
+    const threatInterceptLabel = translate('ПЕРЕХВАТ УГРОЗЫ', 'THREAT INTERCEPT');
+    const viewDetailsLabel = translate('Смотреть детали', 'View Details');
 
     // --- Smooth interpolation: tick counter triggers GeoJSON recalc every second ---
     const [interpTick, setInterpTick] = useState(0);
@@ -864,7 +888,7 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
         // Use original array mapping to preserve correct indices for the popup/selection logic
         // Estimate each box's rendered height based on its content.
         // CSS: padding 5px top/bottom, title maxWidth 160px at 9px font (~18 chars/line),
-        // header "!! ALERT LVL X !!" = 14px, title lines * 13px each, footer 12px if present
+        // header "!! <level label> X !!" (localized) = 14px, title lines * 13px each, footer 12px if present
         const estimateBoxH = (n: any) => {
             const titleLen = (n.title || '').length;
             const titleLines = Math.max(1, Math.ceil(titleLen / 20)); // ~20 chars per line at 9px in 160px
@@ -1124,7 +1148,11 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                 initialViewState={viewState}
                 onMove={evt => {
                     setViewState(evt.viewState);
-                    onViewStateChange?.({ zoom: evt.viewState.zoom, latitude: evt.viewState.latitude });
+                    onViewStateChange?.({
+                        zoom: evt.viewState.zoom,
+                        latitude: evt.viewState.latitude,
+                        longitude: evt.viewState.longitude
+                    });
                     // Debounce bounds update to avoid thrashing during drag
                     if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
                     boundsTimerRef.current = setTimeout(updateBounds, 300);
@@ -1608,13 +1636,13 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                                     )}
 
                                     <div className="absolute inset-0 border border-current rounded opacity-50 animate-pulse" style={{ color: riskColor, zIndex: -1 }}></div>
-                                    <div style={{ fontSize: '10px', letterSpacing: '0.5px' }}>!! ALERT LVL {score} !!</div>
+                                    <div style={{ fontSize: '10px', letterSpacing: '0.5px' }}>{`${alertLevelLabel} ${score} !!`}</div>
                                     <div style={{ color: '#fff', fontSize: '9px', marginTop: '2px', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {n.title}
                                     </div>
                                     {count > 1 && (
                                         <div style={{ color: riskColor, opacity: 0.8, fontSize: '8px', marginTop: '2px' }}>
-                                            [+{count - 1} ACTIVE THREATS IN AREA]
+                                            [+{count - 1} {activeThreatsLabel}]
                                         </div>
                                     )}
                                 </div>
@@ -1704,7 +1732,7 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                             id="gps-jamming-label"
                             type="symbol"
                             layout={{
-                                'text-field': ['concat', 'GPS JAM ', ['to-string', ['round', ['*', 100, ['get', 'ratio']]]], '%'],
+                                'text-field': ['concat', translate('GPS-ПОМЕХИ ', 'GPS JAM '), ['to-string', ['round', ['*', 100, ['get', 'ratio']]]], '%'],
                                 'text-size': [
                                     'interpolate', ['linear'], ['zoom'],
                                     2, 8,
@@ -1807,13 +1835,6 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                 {selectedEntity?.type === 'satellite' && (() => {
                     const sat = data?.satellites?.find((s: any) => s.id === selectedEntity.id);
                     if (!sat) return null;
-                    const missionLabels: Record<string, string> = {
-                        military_recon: '🔴 MILITARY RECON', military_sar: '🔴 MILITARY SAR',
-                        sar: '🔷 SAR IMAGING', sigint: '🟠 SIGINT / ELINT',
-                        navigation: '🔵 NAVIGATION', early_warning: '🟣 EARLY WARNING',
-                        commercial_imaging: '🟢 COMMERCIAL IMAGING', space_station: '🏠 SPACE STATION',
-                        communication: '📡 COMMUNICATION'
-                    };
                     return (
                         <Popup
                             longitude={sat.lng} latitude={sat.lat}
@@ -1834,21 +1855,23 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                                 </div>
                                 {sat.sat_type && (
                                     <div style={{ marginBottom: 4 }}>
-                                        Type: <span style={{ color: '#ffcc00' }}>{sat.sat_type}</span>
+                                        {typeLabel}: <span style={{ color: '#ffcc00' }}>{sat.sat_type}</span>
                                     </div>
                                 )}
                                 {sat.country && (
                                     <div style={{ marginBottom: 4 }}>
-                                        Country: <span style={{ color: '#fff' }}>{sat.country}</span>
+                                        {countryLabel}: <span style={{ color: '#fff' }}>{sat.country}</span>
                                     </div>
                                 )}
                                 {sat.mission && (
                                     <div style={{ marginBottom: 4, fontWeight: 600 }}>
-                                        {missionLabels[sat.mission] || `⚪ ${sat.mission.toUpperCase()}`}
+                                        {MISSION_LABELS[sat.mission]
+                                            ? translate(MISSION_LABELS[sat.mission].ru, MISSION_LABELS[sat.mission].en)
+                                            : `⚪ ${sat.mission.toUpperCase()}`}
                                     </div>
                                 )}
                                 <div style={{ marginBottom: 4 }}>
-                                    Altitude: <span style={{ color: '#44ff88' }}>{sat.alt_km?.toLocaleString()} km</span>
+                                    {altitudeLabel}: <span style={{ color: '#44ff88' }}>{sat.alt_km?.toLocaleString()} km</span>
                                 </div>
                                 {sat.wiki && (
                                     <div className="mt-2 border-t border-gray-700/50 pt-2">
@@ -1881,25 +1904,25 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                                 </div>
                                 {uav.uav_type && (
                                     <div style={{ marginBottom: 4 }}>
-                                        Type: <span style={{ color: '#ffcc00' }}>{uav.uav_type}</span>
+                                        {typeLabel}: <span style={{ color: '#ffcc00' }}>{uav.uav_type}</span>
                                     </div>
                                 )}
                                 {uav.country && (
                                     <div style={{ marginBottom: 4 }}>
-                                        Country: <span style={{ color: '#fff' }}>{uav.country}</span>
+                                        {countryLabel}: <span style={{ color: '#fff' }}>{uav.country}</span>
                                     </div>
                                 )}
                                 <div style={{ marginBottom: 4 }}>
-                                    Altitude: <span style={{ color: '#44ff88' }}>{uav.alt?.toLocaleString()} m</span>
+                                    {altitudeLabel}: <span style={{ color: '#44ff88' }}>{uav.alt?.toLocaleString()} m</span>
                                 </div>
                                 {uav.speed_knots > 0 && (
                                     <div style={{ marginBottom: 4 }}>
-                                        Speed: <span style={{ color: '#00e5ff' }}>{uav.speed_knots} kn</span>
+                                        {translate('СКОРОСТЬ', 'Speed')}: <span style={{ color: '#00e5ff' }}>{uav.speed_knots} kn</span>
                                     </div>
                                 )}
                                 {uav.range_km > 0 && (
                                     <div style={{ marginBottom: 4 }}>
-                                        Operational Range: <span style={{ color: '#ff8844' }}>{uav.range_km?.toLocaleString()} km</span>
+                                        {translate('РАБОЧИЙ ДИАПАЗОН', 'Operational Range')}: <span style={{ color: '#ff8844' }}>{uav.range_km?.toLocaleString()} km</span>
                                     </div>
                                 )}
                                 {uav.wiki && (
@@ -1925,17 +1948,17 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                             <div className="bg-black/90 backdrop-blur-md border border-orange-800 rounded-lg flex flex-col z-[100] font-mono shadow-[0_4px_30px_rgba(255,140,0,0.4)] pointer-events-auto overflow-hidden w-[300px]">
                                 <div className="p-2 border-b border-orange-500/30 bg-orange-950/40 flex justify-between items-center">
                                     <h2 className="text-[10px] tracking-widest font-bold text-orange-400 flex items-center gap-1">
-                                        <AlertTriangle size={12} className="text-orange-400" /> NEWS ON THE GROUND
+                                        <AlertTriangle size={12} className="text-orange-400" /> {translate("НОВОСТИ НА ЗЕМЛЕ", "NEWS ON THE GROUND")}
                                     </h2>
                                     <button onClick={() => onEntityClick?.(null)} className="text-gray-400 hover:text-white">✕</button>
                                 </div>
                                 <div className="p-3 flex flex-col gap-2">
                                     <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                                        <span className="text-gray-500 text-[9px]">LOCATION</span>
+                                        <span className="text-gray-500 text-[9px]">{translate("ЛОКАЦИЯ", "LOCATION")}</span>
                                         <span className="text-white text-[10px] font-bold text-right ml-2 break-words max-w-[150px]">{data.gdelt[selectedEntity.id as number].properties?.name || 'UNKNOWN REGION'}</span>
                                     </div>
                                     <div className="flex flex-col gap-1 mt-1">
-                                        <span className="text-gray-500 text-[9px]">LATEST REPORTS: ({data.gdelt[selectedEntity.id as number].properties?.count || 1})</span>
+                                        <span className="text-gray-500 text-[9px]">{translate("ПОСЛЕДНИЕ СООБЩЕНИЯ", "LATEST REPORTS")}: ({data.gdelt[selectedEntity.id as number].properties?.count || 1})</span>
                                         <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto styled-scrollbar mt-1">
                                             {(() => {
                                                 const urls: string[] = data.gdelt[selectedEntity.id as number].properties?._urls_list || [];
@@ -2039,10 +2062,10 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                                 <div className={`bg-black/90 backdrop-blur-md border ${borderColor} rounded-lg flex flex-col z-[100] font-mono shadow-[0_4px_30px_${shadowColor}] pointer-events-auto overflow-hidden w-[280px]`}>
                                     <div className={`p-2 border-b ${borderColor}/50 ${bgHeaderColor} flex justify-between items-center`}>
                                         <h2 className={`text-[10px] tracking-widest font-bold ${threatColor} flex items-center gap-1`}>
-                                            <AlertTriangle size={12} className={threatColor} /> THREAT INTERCEPT
+                                            <AlertTriangle size={12} className={threatColor} /> {threatInterceptLabel}
                                         </h2>
                                         <div className="flex items-center gap-2">
-                                            <span className={`text-[10px] ${threatColor} font-mono font-bold animate-pulse`}>LVL: {item.risk_score}/10</span>
+                                            <span className={`text-[10px] ${threatColor} font-mono font-bold animate-pulse`}>{levelLabel}: {item.risk_score}/10</span>
                                             <button onClick={() => onEntityClick?.(null)} className="text-gray-400 hover:text-white">✕</button>
                                         </div>
                                     </div>
@@ -2051,7 +2074,7 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                                             <span className={`text-[10px] font-bold leading-tight ${threatColor}`}>{item.title}</span>
                                         </div>
                                         <div className="flex justify-between items-center border-b border-gray-800 pb-1 mt-1">
-                                            <span className="text-gray-500 text-[9px]">SOURCE</span>
+                                            <span className="text-gray-500 text-[9px]">{sourceLabel}</span>
                                             <span className="text-white text-[9px] font-bold text-right ml-2">{item.source || 'UNKNOWN'}</span>
                                         </div>
                                         {item.machine_assessment && (
@@ -2064,7 +2087,7 @@ const MaplibreViewer = ({ data, activeLayers, onEntityClick, flyToLocation, sele
                                         {item.link && (
                                             <div className="flex justify-between items-center mt-1">
                                                 <a href={item.link} target="_blank" rel="noreferrer" className={`${threatColor} hover:text-red-300 text-[9px] font-bold underline`}>
-                                                    View Details
+                                                    {viewDetailsLabel}
                                                 </a>
                                             </div>
                                         )}

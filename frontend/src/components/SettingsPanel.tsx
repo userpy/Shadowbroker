@@ -4,6 +4,7 @@ import { API_BASE } from "@/lib/api";
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, ExternalLink, Key, Shield, X, Save, ChevronDown, ChevronUp } from "lucide-react";
+import type { AppLanguage } from "@/lib/threatRegulations";
 
 interface ApiEntry {
     id: string;
@@ -31,12 +32,34 @@ const CATEGORY_COLORS: Record<string, string> = {
     SIGINT: "text-rose-400 border-rose-500/30 bg-rose-950/20",
 };
 
-const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+const CATEGORY_LABELS: Record<string, { ru: string; en: string }> = {
+    Aviation: { ru: "Авиация", en: "Aviation" },
+    Maritime: { ru: "Море", en: "Maritime" },
+    Geophysical: { ru: "Геофизика", en: "Geophysical" },
+    Space: { ru: "Космос", en: "Space" },
+    Intelligence: { ru: "Разведка", en: "Intelligence" },
+    Geolocation: { ru: "Геолокация", en: "Geolocation" },
+    Weather: { ru: "Погода", en: "Weather" },
+    Markets: { ru: "Рынки", en: "Markets" },
+    SIGINT: { ru: "Сигнальная разведка", en: "SIGINT" },
+};
+
+const SettingsPanel = React.memo(function SettingsPanel({
+    isOpen,
+    onClose,
+    language,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    language?: AppLanguage;
+}) {
     const [apis, setApis] = useState<ApiEntry[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editValue, setEditValue] = useState("");
     const [saving, setSaving] = useState(false);
     const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(["Aviation", "Maritime"]));
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
 
     const fetchKeys = useCallback(async () => {
         try {
@@ -123,8 +146,8 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                                     <Settings size={16} className="text-cyan-400" />
                                 </div>
                                 <div>
-                                    <h2 className="text-sm font-bold tracking-[0.2em] text-white font-mono">SYSTEM CONFIG</h2>
-                                    <span className="text-[9px] text-gray-500 font-mono tracking-widest">API KEY REGISTRY</span>
+                                    <h2 className="text-sm font-bold tracking-[0.2em] text-white font-mono">{tr("КОНФИГУРАЦИЯ СИТЕМЫ", "SYSTEM CONFIG")}</h2>
+                                    <span className="text-[9px] text-gray-500 font-mono tracking-widest">{tr("РЕЕСТР API КЛЮЧЕЙ", "API KEY REGISTRY")}</span>
                                 </div>
                             </div>
                             <button
@@ -140,7 +163,11 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                             <div className="flex items-start gap-2">
                                 <Shield size={12} className="text-cyan-500 mt-0.5 flex-shrink-0" />
                                 <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-                                    API keys are stored locally in the backend <span className="text-cyan-400">.env</span> file. Keys marked with <Key size={8} className="inline text-yellow-500" /> are required for full functionality. Public APIs need no key.
+                                    {tr("API ключи хранятся локально в backend-файле ", "API keys are stored locally in the backend ")}
+                                    <span className="text-cyan-400">.env</span>
+                                    {tr(". Ключи с иконкой ", " file. Keys marked with ")}
+                                    <Key size={8} className="inline text-yellow-500" />
+                                    {tr(" обязательны для полного функционала. Публичные API не требуют ключ.", " are required for full functionality. Public APIs need no key.")}
                                 </p>
                             </div>
                         </div>
@@ -160,10 +187,12 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-[9px] font-mono tracking-widest font-bold px-2 py-0.5 rounded border ${colorClass}`}>
-                                                    {category.toUpperCase()}
+                                                    {(CATEGORY_LABELS[category]?.[lang] || category).toUpperCase()}
                                                 </span>
                                                 <span className="text-[10px] text-gray-500 font-mono">
-                                                    {categoryApis.length} {categoryApis.length === 1 ? 'service' : 'services'}
+                                                    {categoryApis.length} {categoryApis.length === 1
+                                                        ? tr('сервис', 'service')
+                                                        : tr('сервисов', 'services')}
                                                 </span>
                                             </div>
                                             {isExpanded ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
@@ -190,16 +219,16 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                                                                     {api.has_key ? (
                                                                         api.is_set ? (
                                                                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded border border-green-500/30 text-green-400 bg-green-950/20">
-                                                                                KEY SET
+                                                                                {tr("КЛЮЧ ЗАДАН", "KEY SET")}
                                                                             </span>
                                                                         ) : (
                                                                             <span className="text-[8px] font-mono px-1.5 py-0.5 rounded border border-yellow-500/30 text-yellow-400 bg-yellow-950/20">
-                                                                                MISSING
+                                                                                {tr("ОТСУТСТВУЕТ", "MISSING")}
                                                                             </span>
                                                                         )
                                                                     ) : (
                                                                         <span className="text-[8px] font-mono px-1.5 py-0.5 rounded border border-gray-700 text-gray-500">
-                                                                            PUBLIC
+                                                                            {tr("ПУБЛИЧНЫЙ", "PUBLIC")}
                                                                         </span>
                                                                     )}
                                                                     {api.url && (
@@ -232,7 +261,7 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                                                                                 value={editValue}
                                                                                 onChange={(e) => setEditValue(e.target.value)}
                                                                                 className="flex-1 bg-black/60 border border-cyan-900/50 rounded px-2 py-1.5 text-[11px] font-mono text-cyan-300 outline-none focus:border-cyan-500/70 transition-colors"
-                                                                                placeholder="Enter API key..."
+                                                                                placeholder={tr("Введите API ключ...", "Enter API key...")}
                                                                                 autoFocus
                                                                             />
                                                                             <button
@@ -241,13 +270,13 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                                                                                 className="px-3 py-1.5 rounded bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 transition-colors text-[10px] font-mono flex items-center gap-1"
                                                                             >
                                                                                 <Save size={10} />
-                                                                                {saving ? "..." : "SAVE"}
+                                                                                {saving ? "..." : tr("СОХРАНИТЬ", "SAVE")}
                                                                             </button>
                                                                             <button
                                                                                 onClick={() => setEditingId(null)}
                                                                                 className="px-2 py-1.5 rounded border border-gray-700 text-gray-500 hover:text-white hover:border-gray-600 transition-colors text-[10px] font-mono"
                                                                             >
-                                                                                ESC
+                                                                                {tr("ОТМЕНА", "ESC")}
                                                                             </button>
                                                                         </div>
                                                                     ) : (
@@ -258,7 +287,7 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                                                                                 onClick={() => startEditing(api)}
                                                                             >
                                                                                 <span className="text-gray-500 tracking-wider">
-                                                                                    {api.is_set ? api.value_obfuscated : "Click to set key..."}
+                                                                                    {api.is_set ? api.value_obfuscated : tr("Нажмите, чтобы задать ключ...", "Click to set key...")}
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -278,8 +307,8 @@ const SettingsPanel = React.memo(function SettingsPanel({ isOpen, onClose }: { i
                         {/* Footer */}
                         <div className="p-4 border-t border-gray-800/80">
                             <div className="flex items-center justify-between text-[9px] text-gray-600 font-mono">
-                                <span>{apis.length} REGISTERED APIs</span>
-                                <span>{apis.filter(a => a.has_key).length} KEYS CONFIGURED</span>
+                                <span>{apis.length} {tr("ЗАРЕГИСТРИРОВАННЫХ API", "REGISTERED APIs")}</span>
+                                <span>{apis.filter(a => a.has_key).length} {tr("КЛЮЧЕЙ НАСТРОЕНО", "KEYS CONFIGURED")}</span>
                             </div>
                         </div>
                     </motion.div>

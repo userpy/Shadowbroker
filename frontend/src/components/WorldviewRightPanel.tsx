@@ -3,10 +3,23 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import type { AppLanguage } from "@/lib/threatRegulations";
 
-const WorldviewRightPanel = React.memo(function WorldviewRightPanel({ effects, setEffects, setUiVisible }: { effects: any; setEffects: any; setUiVisible: any }) {
+const WorldviewRightPanel = React.memo(function WorldviewRightPanel({
+    effects,
+    setEffects,
+    setUiVisible,
+    language,
+}: {
+    effects: any;
+    setEffects: any;
+    setUiVisible: any;
+    language?: AppLanguage;
+}) {
     const [isMinimized, setIsMinimized] = useState(true);
     const [currentTime, setCurrentTime] = useState({ date: "XXXX-XX-XX", time: "00:00:00" });
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
 
     useEffect(() => {
         const updateTime = () => {
@@ -36,7 +49,7 @@ const WorldviewRightPanel = React.memo(function WorldviewRightPanel({ effects, s
                 <div className="text-[10px] font-mono text-gray-400 tracking-wider">
                     REC {currentTime.date} {currentTime.time}
                     <br />
-                    ORB: 47696 PASS: DESC-284
+                    {tr("ОРБ: 47696 ПРОХОД: DESC-284", "ORB: 47696 PASS: DESC-284")}
                 </div>
             </div>
 
@@ -48,7 +61,7 @@ const WorldviewRightPanel = React.memo(function WorldviewRightPanel({ effects, s
                     className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-900/50 transition-colors border-b border-gray-800/50"
                     onClick={() => setIsMinimized(!isMinimized)}
                 >
-                    <span className="text-[10px] text-gray-500 font-mono tracking-widest">DISPLAY CONFIG</span>
+                    <span className="text-[10px] text-gray-500 font-mono tracking-widest">{tr("КОНФИГ ЭКРАНА", "DISPLAY CONFIG")}</span>
                     <button className="text-gray-500 hover:text-white transition-colors">
                         {isMinimized ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                     </button>
@@ -73,7 +86,7 @@ const WorldviewRightPanel = React.memo(function WorldviewRightPanel({ effects, s
                                         <span className={`text-[14px] ${effects.bloom ? 'text-yellow-500' : 'text-gray-600'}`}>✧</span>
                                         <span className={`text-xs font-mono tracking-widest ${effects.bloom ? 'text-white' : 'text-gray-500'}`}>BLOOM</span>
                                     </div>
-                                    <span className="text-[9px] font-mono tracking-wider text-gray-500">{effects.bloom ? 'ON' : 'OFF'}</span>
+                                    <span className="text-[9px] font-mono tracking-wider text-gray-500">{effects.bloom ? tr('ВКЛ', 'ON') : tr('ВЫКЛ', 'OFF')}</span>
                                 </div>
 
                                 {/* Sharpen Slider */}
@@ -98,13 +111,13 @@ const WorldviewRightPanel = React.memo(function WorldviewRightPanel({ effects, s
                                 <div className="flex flex-col gap-2 relative">
                                     <div className="flex items-center gap-3 border border-gray-800 rounded px-4 py-3 text-gray-500 cursor-default">
                                         <span className="w-3 h-3 border border-gray-500 rounded-full flex items-center justify-center"></span>
-                                        <span className="text-xs font-mono tracking-widest">HUD</span>
+                                        <span className="text-xs font-mono tracking-widest">{tr("HUD", "HUD")}</span>
                                     </div>
 
                                     <div className="flex items-center justify-between border border-gray-800 rounded px-4 py-2 mt-1 bg-black/50">
-                                        <span className="text-[10px] text-gray-500 font-mono">LAYOUT</span>
+                                        <span className="text-[10px] text-gray-500 font-mono">{tr("МАКЕТ", "LAYOUT")}</span>
                                         <span className="text-xs text-white tracking-widest border-b border-dashed border-gray-600 pb-0.5 cursor-pointer flex items-center gap-2">
-                                            Tactical
+                                            {tr("Тактический", "Tactical")}
                                         </span>
                                     </div>
                                 </div>
@@ -113,7 +126,7 @@ const WorldviewRightPanel = React.memo(function WorldviewRightPanel({ effects, s
                                     className="w-full border border-red-900/30 bg-red-950/10 rounded py-3 mt-2 text-[10px] font-mono tracking-widest text-red-500 hover:text-white hover:bg-red-900 hover:border-red-600 transition-all font-bold"
                                     onClick={() => setUiVisible(false)}
                                 >
-                                    CLEAR UI (TACTICAL MODE)
+                                    {tr("ОЧИСТИТЬ UI (ТАКТИЧЕСКИЙ РЕЖИМ)", "CLEAR UI (TACTICAL MODE)")}
                                 </button>
                             </div>
                         </motion.div>

@@ -3,20 +3,38 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ExternalLink, Key, Shield, Radar, Globe, Satellite, Ship, Radio } from "lucide-react";
+import type { AppLanguage } from "@/lib/threatRegulations";
 
 const STORAGE_KEY = "shadowbroker_onboarding_complete";
+
+type LocalizedText = { ru: string; en: string };
 
 const API_GUIDES = [
     {
         name: "OpenSky Network",
         icon: <Radar size={14} className="text-cyan-400" />,
         required: true,
-        description: "Flight tracking with global ADS-B coverage. Provides real-time aircraft positions.",
+        description: {
+            ru: "Отслеживание рейсов с глобальным покрытием ADS-B. Даёт позиции бортов в реальном времени.",
+            en: "Flight tracking with global ADS-B coverage. Provides real-time aircraft positions.",
+        },
         steps: [
-            "Create a free account at opensky-network.org",
-            "Go to Dashboard → OAuth → Create Client",
-            "Copy your Client ID and Client Secret",
-            "Paste both into Settings → Aviation",
+            {
+                ru: "Создайте бесплатный аккаунт на opensky-network.org",
+                en: "Create a free account at opensky-network.org",
+            },
+            {
+                ru: "Перейдите в Dashboard → OAuth → Create Client",
+                en: "Go to Dashboard → OAuth → Create Client",
+            },
+            {
+                ru: "Скопируйте Client ID и Client Secret",
+                en: "Copy your Client ID and Client Secret",
+            },
+            {
+                ru: "Вставьте оба значения в Настройки → Aviation",
+                en: "Paste both into Settings → Aviation",
+            },
         ],
         url: "https://opensky-network.org/index.php?option=com_users&view=registration",
         color: "cyan",
@@ -25,12 +43,27 @@ const API_GUIDES = [
         name: "AIS Stream",
         icon: <Ship size={14} className="text-blue-400" />,
         required: true,
-        description: "Real-time vessel tracking via AIS (Automatic Identification System).",
+        description: {
+            ru: "Отслеживание судов в реальном времени через AIS (Automatic Identification System).",
+            en: "Real-time vessel tracking via AIS (Automatic Identification System).",
+        },
         steps: [
-            "Register at aisstream.io",
-            "Navigate to your API Keys page",
-            "Generate a new API key",
-            "Paste it into Settings → Maritime",
+            {
+                ru: "Зарегистрируйтесь на aisstream.io",
+                en: "Register at aisstream.io",
+            },
+            {
+                ru: "Откройте страницу API Keys",
+                en: "Navigate to your API Keys page",
+            },
+            {
+                ru: "Создайте новый API ключ",
+                en: "Generate a new API key",
+            },
+            {
+                ru: "Вставьте ключ в Настройки → Maritime",
+                en: "Paste it into Settings → Maritime",
+            },
         ],
         url: "https://aisstream.io/authenticate",
         color: "blue",
@@ -38,23 +71,27 @@ const API_GUIDES = [
 ];
 
 const FREE_SOURCES = [
-    { name: "ADS-B Exchange", desc: "Military & general aviation", icon: <Radar size={12} /> },
-    { name: "USGS Earthquakes", desc: "Global seismic data", icon: <Globe size={12} /> },
-    { name: "CelesTrak", desc: "2,000+ satellite orbits", icon: <Satellite size={12} /> },
-    { name: "GDELT Project", desc: "Global conflict events", icon: <Globe size={12} /> },
-    { name: "RainViewer", desc: "Weather radar overlay", icon: <Globe size={12} /> },
-    { name: "OpenMHz", desc: "Radio scanner feeds", icon: <Radio size={12} /> },
-    { name: "RSS Feeds", desc: "NPR, BBC, Reuters, AP", icon: <Globe size={12} /> },
-    { name: "Yahoo Finance", desc: "Defense stocks & oil", icon: <Globe size={12} /> },
+    { name: "ADS-B Exchange", desc: { ru: "Военная и гражданская авиация", en: "Military & general aviation" }, icon: <Radar size={12} /> },
+    { name: "USGS Earthquakes", desc: { ru: "Глобальные сейсмические данные", en: "Global seismic data" }, icon: <Globe size={12} /> },
+    { name: "CelesTrak", desc: { ru: "2,000+ орбит спутников", en: "2,000+ satellite orbits" }, icon: <Satellite size={12} /> },
+    { name: "GDELT Project", desc: { ru: "Глобальные конфликтные события", en: "Global conflict events" }, icon: <Globe size={12} /> },
+    { name: "RainViewer", desc: { ru: "Оверлей погодного радара", en: "Weather radar overlay" }, icon: <Globe size={12} /> },
+    { name: "OpenMHz", desc: { ru: "Сканерные радиопотоки", en: "Radio scanner feeds" }, icon: <Radio size={12} /> },
+    { name: "RSS Feeds", desc: { ru: "NPR, BBC, Reuters, AP", en: "NPR, BBC, Reuters, AP" }, icon: <Globe size={12} /> },
+    { name: "Yahoo Finance", desc: { ru: "Оборонные акции и нефть", en: "Defense stocks & oil" }, icon: <Globe size={12} /> },
 ];
 
 interface OnboardingModalProps {
     onClose: () => void;
     onOpenSettings: () => void;
+    language?: AppLanguage;
 }
 
-const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSettings }: OnboardingModalProps) {
+const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSettings, language }: OnboardingModalProps) {
     const [step, setStep] = useState(0);
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
+    const t = (text: LocalizedText) => (lang === "ru" ? text.ru : text.en);
 
     const handleDismiss = () => {
         localStorage.setItem(STORAGE_KEY, "true");
@@ -100,8 +137,8 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                     <Shield size={20} className="text-cyan-400" />
                                 </div>
                                 <div>
-                                    <h2 className="text-sm font-bold tracking-[0.2em] text-white font-mono">MISSION BRIEFING</h2>
-                                    <span className="text-[9px] text-gray-500 font-mono tracking-widest">FIRST-TIME SETUP</span>
+                                    <h2 className="text-sm font-bold tracking-[0.2em] text-white font-mono">{tr("ВВОДНЫЙ БРИФИНГ", "MISSION BRIEFING")}</h2>
+                                    <span className="text-[9px] text-gray-500 font-mono tracking-widest">{tr("ПЕРВИЧНАЯ НАСТРОЙКА", "FIRST-TIME SETUP")}</span>
                                 </div>
                             </div>
                             <button
@@ -115,7 +152,7 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
 
                     {/* Step Indicators */}
                     <div className="flex gap-2 px-6 pt-4">
-                        {["Welcome", "API Keys", "Free Sources"].map((label, i) => (
+                        {[tr("Добро пожаловать", "Welcome"), tr("API ключи", "API Keys"), tr("Бесплатные источники", "Free Sources")].map((label, i) => (
                             <button
                                 key={label}
                                 onClick={() => setStep(i)}
@@ -139,8 +176,10 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                         S H A D O W <span className="text-cyan-400">B R O K E R</span>
                                     </div>
                                     <p className="text-[11px] text-gray-400 font-mono leading-relaxed max-w-md mx-auto">
-                                        Real-time OSINT dashboard aggregating 12+ live intelligence sources.
-                                        Flights, ships, satellites, earthquakes, conflicts, and more — all on one map.
+                                        {tr(
+                                            "OSINT-панель реального времени, агрегирующая 12+ живых источников разведданных. Рейсы, суда, спутники, землетрясения, конфликты и другое на одной карте.",
+                                            "Real-time OSINT dashboard aggregating 12+ live intelligence sources. Flights, ships, satellites, earthquakes, conflicts, and more — all on one map."
+                                        )}
                                     </p>
                                 </div>
 
@@ -148,10 +187,10 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                     <div className="flex items-start gap-2">
                                         <Key size={14} className="text-yellow-500 mt-0.5 flex-shrink-0" />
                                         <div>
-                                            <p className="text-[11px] text-yellow-400 font-mono font-bold mb-1">API Keys Required</p>
+                                            <p className="text-[11px] text-yellow-400 font-mono font-bold mb-1">{tr("Требуются API ключи", "API Keys Required")}</p>
                                             <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-                                                Two API keys are needed for full functionality: <span className="text-cyan-400">OpenSky Network</span> (flights) and <span className="text-blue-400">AIS Stream</span> (ships).
-                                                Both are free. Without them, some panels will show no data.
+                                                {tr("Для полного функционала нужны два API ключа: ", "Two API keys are needed for full functionality: ")}
+                                                <span className="text-cyan-400">OpenSky Network</span> {tr("(рейсы) и ", "(flights) and ")}<span className="text-blue-400">AIS Stream</span> {tr("(суда). Оба бесплатны. Без них часть панелей будет пустой.", "(ships). Both are free. Without them, some panels will show no data.")}
                                             </p>
                                         </div>
                                     </div>
@@ -161,9 +200,9 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                     <div className="flex items-start gap-2">
                                         <Globe size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
                                         <div>
-                                            <p className="text-[11px] text-green-400 font-mono font-bold mb-1">8 Sources Work Immediately</p>
+                                            <p className="text-[11px] text-green-400 font-mono font-bold mb-1">{tr("8 источников работают сразу", "8 Sources Work Immediately")}</p>
                                             <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-                                                Military aircraft, satellites, earthquakes, global conflicts, weather radar, radio scanners, news, and market data all work out of the box — no keys needed.
+                                                {tr("Военные борта, спутники, землетрясения, глобальные конфликты, погодный радар, радиосканеры, новости и рыночные данные работают из коробки без ключей.", "Military aircraft, satellites, earthquakes, global conflicts, weather radar, radio scanners, news, and market data all work out of the box — no keys needed.")}
                                             </p>
                                         </div>
                                     </div>
@@ -179,7 +218,7 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                             <div className="flex items-center gap-2">
                                                 {api.icon}
                                                 <span className="text-xs font-mono text-white font-bold">{api.name}</span>
-                                                <span className="text-[8px] font-mono px-1.5 py-0.5 rounded border border-yellow-500/30 text-yellow-400 bg-yellow-950/20">REQUIRED</span>
+                                                <span className="text-[8px] font-mono px-1.5 py-0.5 rounded border border-yellow-500/30 text-yellow-400 bg-yellow-950/20">{tr("ОБЯЗАТЕЛЬНО", "REQUIRED")}</span>
                                             </div>
                                             <a
                                                 href={api.url}
@@ -187,15 +226,15 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                                 rel="noopener noreferrer"
                                                 className={`text-[10px] font-mono text-${api.color}-400 hover:text-${api.color}-300 flex items-center gap-1 transition-colors`}
                                             >
-                                                GET KEY <ExternalLink size={10} />
+                                                {tr("ПОЛУЧИТЬ КЛЮЧ", "GET KEY")} <ExternalLink size={10} />
                                             </a>
                                         </div>
-                                        <p className="text-[10px] text-gray-400 font-mono mb-3">{api.description}</p>
+                                        <p className="text-[10px] text-gray-400 font-mono mb-3">{t(api.description)}</p>
                                         <ol className="space-y-1.5">
                                             {api.steps.map((s, i) => (
                                                 <li key={i} className="flex items-start gap-2">
                                                     <span className={`text-[9px] font-mono text-${api.color}-500 font-bold mt-0.5 w-3 flex-shrink-0`}>{i + 1}.</span>
-                                                    <span className="text-[10px] text-gray-300 font-mono">{s}</span>
+                                                    <span className="text-[10px] text-gray-300 font-mono">{t(s)}</span>
                                                 </li>
                                             ))}
                                         </ol>
@@ -207,7 +246,7 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                     className="w-full py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 transition-colors text-[11px] font-mono tracking-widest flex items-center justify-center gap-2"
                                 >
                                     <Key size={14} />
-                                    OPEN SETTINGS TO ENTER KEYS
+                                    {tr("ОТКРЫТЬ НАСТРОЙКИ И ВВЕСТИ КЛЮЧИ", "OPEN SETTINGS TO ENTER KEYS")}
                                 </button>
                             </div>
                         )}
@@ -215,7 +254,7 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                         {step === 2 && (
                             <div className="space-y-3">
                                 <p className="text-[10px] text-gray-400 font-mono mb-3">
-                                    These data sources are completely free and require no API keys. They activate automatically on launch.
+                                    {tr("Эти источники полностью бесплатны и не требуют API ключей. Активируются автоматически при запуске.", "These data sources are completely free and require no API keys. They activate automatically on launch.")}
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
                                     {FREE_SOURCES.map((src) => (
@@ -224,7 +263,7 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                                 <span className="text-green-500">{src.icon}</span>
                                                 <span className="text-[10px] font-mono text-white font-medium">{src.name}</span>
                                             </div>
-                                            <p className="text-[9px] text-gray-500 font-mono">{src.desc}</p>
+                                            <p className="text-[9px] text-gray-500 font-mono">{t(src.desc)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -243,7 +282,7 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                             }`}
                             disabled={step === 0}
                         >
-                            PREV
+                            {tr("НАЗАД", "PREV")}
                         </button>
 
                         <div className="flex gap-1.5">
@@ -257,14 +296,14 @@ const OnboardingModal = React.memo(function OnboardingModal({ onClose, onOpenSet
                                 onClick={() => setStep(step + 1)}
                                 className="px-4 py-2 rounded border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 text-[10px] font-mono tracking-widest transition-all"
                             >
-                                NEXT
+                                {tr("ДАЛЕЕ", "NEXT")}
                             </button>
                         ) : (
                             <button
                                 onClick={handleDismiss}
                                 className="px-4 py-2 rounded bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/30 text-[10px] font-mono tracking-widest transition-all"
                             >
-                                LAUNCH
+                                {tr("ЗАПУСК", "LAUNCH")}
                             </button>
                         )}
                     </div>

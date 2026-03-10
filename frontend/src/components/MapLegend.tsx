@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, ChevronUp } from "lucide-react";
+import type { AppLanguage } from "@/lib/threatRegulations";
 
 // ─── Inline SVG legend icons (small, crisp, no external deps) ───
 const plane = (fill: string, size = 16) =>
@@ -186,8 +187,34 @@ const LEGEND: LegendCategory[] = [
     },
 ];
 
-const MapLegend = React.memo(function MapLegend({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+const CATEGORY_TRANSLATIONS: Record<string, { ru: string; en: string }> = {
+    "COMMERCIAL AVIATION": { ru: "КОММЕРЧЕСКАЯ АВИАЦИЯ", en: "COMMERCIAL AVIATION" },
+    "PRIVATE AVIATION": { ru: "ЧАСТНАЯ АВИАЦИЯ", en: "PRIVATE AVIATION" },
+    "PRIVATE JETS": { ru: "ЧАСТНЫЕ ДЖЕТЫ", en: "PRIVATE JETS" },
+    "MILITARY AVIATION": { ru: "ВОЕННАЯ АВИАЦИЯ", en: "MILITARY AVIATION" },
+    "TRACKED AIRCRAFT (ALERT)": { ru: "ОТСЛЕЖИВАЕМЫЕ БОРТА (ТРЕВОГА)", en: "TRACKED AIRCRAFT (ALERT)" },
+    "SATELLITES": { ru: "СПУТНИКИ", en: "SATELLITES" },
+    "MARITIME": { ru: "МОРСКАЯ ОБСТАНОВКА", en: "MARITIME" },
+    "GEOPHYSICAL": { ru: "ГЕОФИЗИКА", en: "GEOPHYSICAL" },
+    "INCIDENTS & INTELLIGENCE": { ru: "ИНЦИДЕНТЫ И РАЗВЕДКА", en: "INCIDENTS & INTELLIGENCE" },
+    "NEWS & OSINT": { ru: "НОВОСТИ И OSINT", en: "NEWS & OSINT" },
+    "GPS JAMMING / INTERFERENCE": { ru: "GPS-ПОМЕХИ / ИНТЕРФЕРЕНЦИЯ", en: "GPS JAMMING / INTERFERENCE" },
+    "SURVEILLANCE / CCTV": { ru: "НАБЛЮДЕНИЕ / CCTV", en: "SURVEILLANCE / CCTV" },
+    "OVERLAYS": { ru: "ОВЕРЛЕИ", en: "OVERLAYS" },
+};
+
+const MapLegend = React.memo(function MapLegend({
+    isOpen,
+    onClose,
+    language,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    language?: AppLanguage;
+}) {
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
 
     const toggle = (name: string) => {
         setCollapsed(prev => {
@@ -230,8 +257,8 @@ const MapLegend = React.memo(function MapLegend({ isOpen, onClose }: { isOpen: b
                                     </svg>
                                 </div>
                                 <div>
-                                    <h2 className="text-sm font-bold tracking-[0.2em] text-white font-mono">MAP LEGEND</h2>
-                                    <span className="text-[9px] text-gray-500 font-mono tracking-widest">ICON REFERENCE KEY</span>
+                                    <h2 className="text-sm font-bold tracking-[0.2em] text-white font-mono">{tr("ЛЕГЕНДА КАРТЫ", "MAP LEGEND")}</h2>
+                                    <span className="text-[9px] text-gray-500 font-mono tracking-widest">{tr("КЛЮЧ УСЛОВНЫХ ОБОЗНАЧЕНИЙ", "ICON REFERENCE KEY")}</span>
                                 </div>
                             </div>
                             <button
@@ -254,7 +281,7 @@ const MapLegend = React.memo(function MapLegend({ isOpen, onClose }: { isOpen: b
                                             className="w-full flex items-center justify-between px-3 py-2 bg-gray-900/50 hover:bg-gray-900/80 transition-colors"
                                         >
                                             <span className={`text-[9px] font-mono tracking-widest font-bold px-2 py-0.5 rounded border ${cat.color}`}>
-                                                {cat.name}
+                                                {CATEGORY_TRANSLATIONS[cat.name]?.[lang] || cat.name}
                                             </span>
                                             {isCollapsed ? <ChevronDown size={12} className="text-gray-500" /> : <ChevronUp size={12} className="text-gray-500" />}
                                         </button>
@@ -288,7 +315,7 @@ const MapLegend = React.memo(function MapLegend({ isOpen, onClose }: { isOpen: b
                         {/* Footer */}
                         <div className="p-3 border-t border-gray-800/80 flex-shrink-0">
                             <div className="text-[9px] text-gray-600 font-mono text-center tracking-wider">
-                                {LEGEND.reduce((sum, c) => sum + c.items.length, 0)} ICON DEFINITIONS ACROSS {LEGEND.length} CATEGORIES
+                                {tr("Определений иконок:", "Icon definitions:")} {LEGEND.reduce((sum, c) => sum + c.items.length, 0)} · {tr("Категорий:", "Categories:")} {LEGEND.length}
                             </div>
                         </div>
                     </motion.div>

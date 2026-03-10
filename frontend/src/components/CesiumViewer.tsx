@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { AppLanguage } from "@/lib/threatRegulations";
 import * as satellite from 'satellite.js';
 
-export default function CesiumViewer({ data, activeLayers, activeFilters, effects, onEntityClick, selectedEntity, flyToLocation, isEavesdropping, onEavesdropClick, onCameraMove }: { data: any, activeLayers: any, activeFilters?: Record<string, string[]>, effects: any, onEntityClick?: any, selectedEntity?: any, flyToLocation?: { lat: number, lng: number, ts: number } | null, isEavesdropping?: boolean, onEavesdropClick?: (loc: { lat: number, lng: number }) => void, onCameraMove?: (loc: { lat: number, lng: number }) => void }) {
+export default function CesiumViewer({ data, activeLayers, activeFilters, effects, onEntityClick, selectedEntity, flyToLocation, isEavesdropping, onEavesdropClick, onCameraMove, language }: { data: any, activeLayers: any, activeFilters?: Record<string, string[]>, effects: any, onEntityClick?: any, selectedEntity?: any, flyToLocation?: { lat: number, lng: number, ts: number } | null, isEavesdropping?: boolean, onEavesdropClick?: (loc: { lat: number, lng: number }) => void, onCameraMove?: (loc: { lat: number, lng: number }) => void, language?: AppLanguage }) {
     const cesiumContainer = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<any>(null);
     const flightBillboardsRef = useRef<any>(null);
@@ -13,6 +14,10 @@ export default function CesiumViewer({ data, activeLayers, activeFilters, effect
     const cctvDataSourceRef = useRef<any>(null);
     const [cesiumLoaded, setCesiumLoaded] = useState(false);
     const [popupPosition, setPopupPosition] = useState<{ x: number, y: number } | null>(null);
+    const lang: AppLanguage = language || "ru";
+    const isRussianLang = lang === "ru";
+    const levelLabel = isRussianLang ? "УРОВЕНЬ" : "LVL";
+    const alertLevelLabel = isRussianLang ? "!! УРОВЕНЬ" : "!! LVL";
 
     // Fly camera to a specific location when triggered by Find/Locate
     useEffect(() => {
@@ -826,7 +831,9 @@ export default function CesiumViewer({ data, activeLayers, activeFilters, effect
                             outlineColor: color
                         },
                         label: {
-                            text: n.cluster_count > 1 ? `!! ALERT LVL ${n.risk_score} !!\n${n.title.substring(0, 30)}...\n[+${n.cluster_count - 1} MORE]` : `!! ALERT LVL ${n.risk_score}!!\n${n.title.substring(0, 30)}...`,
+                            text: n.cluster_count > 1
+                                ? `${alertLevelLabel} ${n.risk_score} !!\n${n.title.substring(0, 30)}...\n[+${n.cluster_count - 1} MORE]`
+                                : `${alertLevelLabel} ${n.risk_score}!!\n${n.title.substring(0, 30)}...`,
                             font: 'bold 10px monospace',
                             fillColor: color,
                             backgroundColor: Cesium.Color.fromCssColorString('rgba(0,0,0,0.8)'),
@@ -1724,7 +1731,7 @@ export default function CesiumViewer({ data, activeLayers, activeFilters, effect
                                                         <span className="font-bold flex items-center gap-1 text-cyan-500">
                                                             &gt;_ {item.source}
                                                         </span>
-                                                        <span className={isHigh ? "text-red-500" : "text-cyan-500"}>LVL: {item.risk_score}/10</span>
+                                                        <span className={isHigh ? "text-red-500" : "text-cyan-500"}>{levelLabel}: {item.risk_score}/10</span>
                                                     </div>
                                                     <a href={item.link} target="_blank" rel="noreferrer" className={`text-xs ${titleClass} hover:text-white transition-colors leading-relaxed`}>
                                                         {item.title}

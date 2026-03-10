@@ -1,6 +1,18 @@
 "use client";
 
 import { API_BASE } from "@/lib/api";
+import {
+  type AppLanguage,
+  type LocalizedText,
+  getZoomThreatMultiplier,
+  INDICATOR_REGULATIONS,
+  LEVEL_REGULATIONS,
+  resolveMapSegment,
+  THREAT_LEVELS,
+  THREAT_THRESHOLDS,
+  THREAT_WEIGHTS,
+  type ThreatLevelIndex,
+} from "@/lib/threatRegulations";
 import { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from 'next/dynamic';
 import { motion } from "framer-motion";
@@ -25,10 +37,11 @@ export default function Dashboard() {
   const [dataVersion, setDataVersion] = useState(0);
   // Stable reference for child components — only changes when dataVersion increments
   const data = dataRef.current;
+  const [language, setLanguage] = useState<AppLanguage>("ru");
   const [uiVisible, setUiVisible] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
-  const [mapView, setMapView] = useState({ zoom: 2, latitude: 20 });
+  const [mapView, setMapView] = useState({ zoom: 2, latitude: 20, longitude: 0 });
   const [measureMode, setMeasureMode] = useState(false);
   const [measurePoints, setMeasurePoints] = useState<{ lat: number; lng: number }[]>([]);
 
@@ -56,6 +69,18 @@ export default function Dashboard() {
 
   const [activeStyle, setActiveStyle] = useState('DEFAULT');
   const stylesList = ['DEFAULT', 'FLIR', 'NVG', 'CRT'];
+
+  useEffect(() => {
+    const saved = localStorage.getItem("shadowbroker_lang");
+    if (saved === "ru" || saved === "en") setLanguage(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("shadowbroker_lang", language);
+  }, [language]);
+
+  const t = useCallback((text: LocalizedText) => (language === "ru" ? text.ru : text.en), [language]);
+  const tr = useCallback((ru: string, en: string) => (language === "ru" ? ru : en), [language]);
 
   const cycleStyle = () => {
     setActiveStyle((prev) => {
@@ -176,6 +201,103 @@ export default function Dashboard() {
   const fastEtag = useRef<string | null>(null);
   const slowEtag = useRef<string | null>(null);
 
+  const commercialFlights = Array.isArray(data?.commercial_flights) ? data.commercial_flights : [];
+  const privateFlights = Array.isArray(data?.private_flights) ? data.private_flights : [];
+  const privateJets = Array.isArray(data?.private_jets) ? data.private_jets : [];
+  const militaryFlights = Array.isArray(data?.military_flights) ? data.military_flights : [];
+  const trackedFlights = Array.isArray(data?.tracked_flights) ? data.tracked_flights : [];
+  const allFlights = [...commercialFlights, ...privateFlights, ...privateJets, ...militaryFlights, ...trackedFlights];
+  const emergencyFlights = allFlights.filter((f: any) => f?.squawk === "7700").length;
+  const incidentsCount = Array.isArray(data?.gdelt) ? data.gdelt.length : 0;
+  const earthquakesCount = Array.isArray(data?.earthquakes) ? data.earthquakes.length : 0;
+  const gpsJammingCount = Array.isArray(data?.gps_jamming) ? data.gps_jamming.length : 0;
+  const militaryFlightsCount = militaryFlights.length;
+  const baseThreatScore = Math.round(
+    incidentsCount * THREAT_WEIGHTS.incident
+    + emergencyFlights * THREAT_WEIGHTS.emergencySquawk
+    + gpsJammingCount * THREAT_WEIGHTS.gpsJamming
+    + earthquakesCount * THREAT_WEIGHTS.earthquake
+    + militaryFlightsCount * THREAT_WEIGHTS.militaryFlight
+  );
+  const mapSegment = resolveMapSegment(mapView.latitude, mapView.longitude);
+  const zoomThreatMultiplier = getZoomThreatMultiplier(mapView.zoom);
+  const threatScore = Math.round(baseThreatScore * mapSegment.multiplier * zoomThreatMultiplier);
+
+  const threatLevel: ThreatLevelIndex = threatScore >= THREAT_THRESHOLDS.emergency
+    ? 3
+    : threatScore >= THREAT_THRESHOLDS.bad
+      ? 2
+      : threatScore >= THREAT_THRESHOLDS.normal
+        ? 1
+        : 0;
+  const threatLevels = THREAT_LEVELS;
+  const activeLevelRegulation = LEVEL_REGULATIONS[threatLevel];
+  const threatButtonStyles = [
+    "border-emerald-500/60 bg-emerald-950/70 text-emerald-100",
+    "border-yellow-500/60 bg-yellow-950/70 text-yellow-100",
+    "border-orange-500/60 bg-orange-950/70 text-orange-100",
+    "border-red-500/60 bg-red-950/70 text-red-100",
+  ] as const;
+  const threatDotStyles = [
+    "bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.9)]",
+    "bg-yellow-300 shadow-[0_0_10px_rgba(253,224,71,0.9)]",
+    "bg-orange-300 shadow-[0_0_10px_rgba(253,186,116,0.9)]",
+    "bg-red-300 shadow-[0_0_10px_rgba(252,165,165,0.9)]",
+  ] as const;
+  const levelRecommendationRows = ([0, 1, 2, 3] as ThreatLevelIndex[]).map((level) => {
+    const regulation = LEVEL_REGULATIONS[level];
+    return {
+      level,
+      code: regulation.code,
+      label: t(THREAT_LEVELS[level].label),
+      recommendation: `${t(regulation.objective)} ${t(regulation.escalation)}`,
+    };
+  });
+  const emergencyRule = INDICATOR_REGULATIONS.emergencySquawk;
+  const gpsRule = INDICATOR_REGULATIONS.gpsJamming;
+  const incidentsRule = INDICATOR_REGULATIONS.globalIncidents;
+  const militaryRule = INDICATOR_REGULATIONS.militaryFlights;
+  const recommendationRows = [
+    {
+      protocol: activeLevelRegulation.code,
+      indicator: tr("Общий риск", "Overall risk"),
+      value: `${t(threatLevels[threatLevel].label)} (${threatScore})`,
+      recommendation: `${t(activeLevelRegulation.objective)} ${t(activeLevelRegulation.escalation)}`,
+    },
+    {
+      protocol: emergencyRule.code,
+      indicator: t(emergencyRule.indicator),
+      value: emergencyFlights.toLocaleString(),
+      recommendation: emergencyFlights >= emergencyRule.highThreshold
+        ? t(emergencyRule.highAction)
+        : t(emergencyRule.lowAction),
+    },
+    {
+      protocol: gpsRule.code,
+      indicator: t(gpsRule.indicator),
+      value: gpsJammingCount.toLocaleString(),
+      recommendation: gpsJammingCount >= gpsRule.highThreshold
+        ? t(gpsRule.highAction)
+        : t(gpsRule.lowAction),
+    },
+    {
+      protocol: incidentsRule.code,
+      indicator: t(incidentsRule.indicator),
+      value: incidentsCount.toLocaleString(),
+      recommendation: incidentsCount >= incidentsRule.highThreshold
+        ? t(incidentsRule.highAction)
+        : t(incidentsRule.lowAction),
+    },
+    {
+      protocol: militaryRule.code,
+      indicator: t(militaryRule.indicator),
+      value: militaryFlightsCount.toLocaleString(),
+      recommendation: militaryFlightsCount >= militaryRule.highThreshold
+        ? t(militaryRule.highAction)
+        : t(militaryRule.lowAction),
+    },
+  ];
+
   useEffect(() => {
     const fetchFastData = async () => {
       try {
@@ -234,6 +356,7 @@ export default function Dashboard() {
       <ErrorBoundary name="Map">
         <MaplibreViewer
           data={data}
+          language={language}
           activeLayers={activeLayers}
           activeFilters={activeFilters}
           effects={{ ...effects, bloom: effects.bloom && activeStyle !== 'DEFAULT', style: activeStyle }}
@@ -295,10 +418,23 @@ export default function Dashboard() {
           {/* LEFT HUD CONTAINER */}
           <div className="absolute left-6 top-24 bottom-6 w-80 flex flex-col gap-6 z-[200] pointer-events-none">
             {/* LEFT PANEL - DATA LAYERS */}
-            <WorldviewLeftPanel data={data} activeLayers={activeLayers} setActiveLayers={setActiveLayers} onSettingsClick={() => setSettingsOpen(true)} onLegendClick={() => setLegendOpen(true)} />
+            <WorldviewLeftPanel
+              data={data}
+              activeLayers={activeLayers}
+              setActiveLayers={setActiveLayers}
+              onSettingsClick={() => setSettingsOpen(true)}
+              onLegendClick={() => setLegendOpen(true)}
+              language={language}
+              onSetLanguage={(nextLang) => setLanguage(nextLang)}
+            />
 
             {/* LEFT BOTTOM - DISPLAY CONFIG */}
-            <WorldviewRightPanel effects={effects} setEffects={setEffects} setUiVisible={setUiVisible} />
+            <WorldviewRightPanel
+              effects={effects}
+              setEffects={setEffects}
+              setUiVisible={setUiVisible}
+              language={language}
+            />
           </div>
 
           {/* RIGHT HUD CONTAINER */}
@@ -319,12 +455,13 @@ export default function Dashboard() {
                     return prev;
                   });
                 }}
+                language={language}
               />
             </div>
 
             {/* TOP RIGHT - MARKETS */}
             <div className="flex-shrink-0">
-              <MarketsPanel data={data} />
+              <MarketsPanel data={data} language={language} />
             </div>
 
             {/* SIGINT & RADIO INTERCEPTS */}
@@ -335,17 +472,29 @@ export default function Dashboard() {
                 setIsEavesdropping={setIsEavesdropping}
                 eavesdropLocation={eavesdropLocation}
                 cameraCenter={cameraCenter}
+                language={language}
               />
             </div>
 
             {/* DATA FILTERS */}
             <div className="flex-shrink-0">
-              <FilterPanel data={data} activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
+              <FilterPanel
+                data={data}
+                activeFilters={activeFilters}
+                setActiveFilters={setActiveFilters}
+                language={language}
+              />
             </div>
 
             {/* BOTTOM RIGHT - NEWS FEED (fills remaining space) */}
             <div className="flex-1 min-h-0 flex flex-col">
-              <NewsFeed data={data} selectedEntity={selectedEntity} regionDossier={regionDossier} regionDossierLoading={regionDossierLoading} />
+              <NewsFeed
+                data={data}
+                selectedEntity={selectedEntity}
+                regionDossier={regionDossier}
+                regionDossierLoading={regionDossierLoading}
+                language={language}
+              />
             </div>
           </div>
 
@@ -362,7 +511,7 @@ export default function Dashboard() {
             >
               {/* Coordinates */}
               <div className="flex flex-col items-center min-w-[120px]">
-                <div className="text-[8px] text-gray-600 font-mono tracking-[0.2em]">COORDINATES</div>
+                <div className="text-[8px] text-gray-600 font-mono tracking-[0.2em]">{tr("КООРДИНАТЫ", "COORDINATES")}</div>
                 <div className="text-[11px] text-cyan-400 font-mono font-bold tracking-wide">
                   {mouseCoords ? `${mouseCoords.lat.toFixed(4)}, ${mouseCoords.lng.toFixed(4)}` : '0.0000, 0.0000'}
                 </div>
@@ -373,9 +522,9 @@ export default function Dashboard() {
 
               {/* Location name */}
               <div className="flex flex-col items-center min-w-[180px] max-w-[320px]">
-                <div className="text-[8px] text-gray-600 font-mono tracking-[0.2em]">LOCATION</div>
+                <div className="text-[8px] text-gray-600 font-mono tracking-[0.2em]">{tr("ЛОКАЦИЯ", "LOCATION")}</div>
                 <div className="text-[10px] text-gray-300 font-mono truncate max-w-[320px]">
-                  {locationLabel || 'Hover over map...'}
+                  {locationLabel || tr("Наведите курсор на карту...", "Hover over map...")}
                 </div>
               </div>
 
@@ -384,7 +533,7 @@ export default function Dashboard() {
 
               {/* Style preset (compact) */}
               <div className="flex flex-col items-center">
-                <div className="text-[8px] text-gray-600 font-mono tracking-[0.2em]">STYLE</div>
+                <div className="text-[8px] text-gray-600 font-mono tracking-[0.2em]">{tr("СТИЛЬ", "STYLE")}</div>
                 <div className="text-[11px] text-cyan-400 font-mono font-bold">{activeStyle}</div>
               </div>
             </div>
@@ -398,7 +547,7 @@ export default function Dashboard() {
           onClick={() => setUiVisible(true)}
           className="absolute bottom-6 right-6 z-[200] bg-black/60 backdrop-blur-md border border-gray-800 rounded px-4 py-2 text-[10px] font-mono tracking-widest text-cyan-500 hover:text-cyan-300 hover:border-cyan-800 transition-colors pointer-events-auto"
         >
-          RESTORE UI
+          {tr("ВОССТАНОВИТЬ UI", "RESTORE UI")}
         </button>
       )}
 
@@ -414,6 +563,7 @@ export default function Dashboard() {
             if (measureMode) setMeasurePoints([]);
           }}
           onClearMeasure={() => setMeasurePoints([])}
+          language={language}
         />
       </div>
 
@@ -428,16 +578,25 @@ export default function Dashboard() {
       <div className="absolute inset-0 pointer-events-none z-[3] opacity-5 bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)]" style={{ backgroundSize: '100% 4px' }}></div>
 
       {/* SETTINGS PANEL */}
-      <SettingsPanel isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsPanel
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        language={language}
+      />
 
       {/* MAP LEGEND */}
-      <MapLegend isOpen={legendOpen} onClose={() => setLegendOpen(false)} />
+      <MapLegend
+        isOpen={legendOpen}
+        onClose={() => setLegendOpen(false)}
+        language={language}
+      />
 
       {/* ONBOARDING MODAL */}
       {showOnboarding && (
         <OnboardingModal
           onClose={() => setShowOnboarding(false)}
           onOpenSettings={() => { setShowOnboarding(false); setSettingsOpen(true); }}
+          language={language}
         />
       )}
 
@@ -445,7 +604,9 @@ export default function Dashboard() {
       {backendStatus === 'disconnected' && (
         <div className="absolute top-0 left-0 right-0 z-[9000] flex items-center justify-center py-2 bg-red-950/90 border-b border-red-500/40 backdrop-blur-sm">
           <span className="text-[10px] font-mono tracking-widest text-red-400">
-            BACKEND OFFLINE — Cannot reach {API_BASE}. Start the backend server or check your connection.
+            {language === "ru"
+              ? `BACKEND OFFLINE — Нет связи с ${API_BASE}. Запустите backend или проверьте подключение.`
+              : `BACKEND OFFLINE — Cannot reach ${API_BASE}. Start the backend server or check your connection.`}
           </span>
         </div>
       )}

@@ -6,11 +6,13 @@ import { ChevronUp, Filter, Plane, Shield, Star, Ship, SlidersHorizontal } from 
 import AdvancedFilterModal from './AdvancedFilterModal';
 import { airlineNames } from '../lib/airlineCodes';
 import { trackedCategories, trackedOperators } from '../lib/trackedData';
+import type { AppLanguage } from "@/lib/threatRegulations";
 
 interface FilterPanelProps {
     data: any;
     activeFilters: Record<string, string[]>;
     setActiveFilters: (filters: Record<string, string[]>) => void;
+    language?: AppLanguage;
 }
 
 type ModalConfig = {
@@ -21,9 +23,11 @@ type ModalConfig = {
     fields: { key: string; label: string; options: string[]; optionLabels?: Record<string, string> }[];
 };
 
-export default function FilterPanel({ data, activeFilters, setActiveFilters }: FilterPanelProps) {
+export default function FilterPanel({ data, activeFilters, setActiveFilters, language }: FilterPanelProps) {
     const [isMinimized, setIsMinimized] = useState(true);
     const [openModal, setOpenModal] = useState<string | null>(null);
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
 
     // ── Extract unique values from live data ──
 
@@ -142,54 +146,54 @@ export default function FilterPanel({ data, activeFilters, setActiveFilters }: F
 
     const modalConfigs: Record<string, ModalConfig> = {
         commercial: {
-            title: 'COMMERCIAL FLIGHTS',
+            title: tr('КОММЕРЧЕСКИЕ РЕЙСЫ', 'COMMERCIAL FLIGHTS'),
             icon: <Plane size={13} className="text-cyan-400" />,
             accentColor: '#00bcd4',
             accentColorName: 'cyan',
             fields: [
-                { key: 'commercial_departure', label: 'DEPARTURE', options: uniqueOrigins },
-                { key: 'commercial_arrival', label: 'ARRIVAL', options: uniqueDestinations },
-                { key: 'commercial_airline', label: 'AIRLINE', options: uniqueAirlines, optionLabels: airlineLabels },
+                { key: 'commercial_departure', label: tr('ВЫЛЕТ', 'DEPARTURE'), options: uniqueOrigins },
+                { key: 'commercial_arrival', label: tr('ПРИЛЁТ', 'ARRIVAL'), options: uniqueDestinations },
+                { key: 'commercial_airline', label: tr('АВИАКОМПАНИЯ', 'AIRLINE'), options: uniqueAirlines, optionLabels: airlineLabels },
             ]
         },
         private: {
-            title: 'PRIVATE / JETS',
+            title: tr('ЧАСТНЫЕ / ДЖЕТЫ', 'PRIVATE / JETS'),
             icon: <Plane size={13} className="text-orange-400" />,
             accentColor: '#FF8C00',
             accentColorName: 'orange',
             fields: [
-                { key: 'private_callsign', label: 'CALLSIGN / REG', options: uniquePrivateCallsigns },
-                { key: 'private_aircraft_type', label: 'AIRCRAFT TYPE', options: uniquePrivateAircraftTypes },
+                { key: 'private_callsign', label: tr('ПОЗЫВНОЙ / REG', 'CALLSIGN / REG'), options: uniquePrivateCallsigns },
+                { key: 'private_aircraft_type', label: tr('ТИП БОРТА', 'AIRCRAFT TYPE'), options: uniquePrivateAircraftTypes },
             ]
         },
         military: {
-            title: 'MILITARY',
+            title: tr('ВОЕННЫЕ', 'MILITARY'),
             icon: <Shield size={13} className="text-yellow-400" />,
             accentColor: '#EAB308',
             accentColorName: 'yellow',
             fields: [
-                { key: 'military_country', label: 'COUNTRY / REG', options: uniqueMilCountries },
-                { key: 'military_aircraft_type', label: 'AIRCRAFT TYPE', options: uniqueMilAircraftTypes },
+                { key: 'military_country', label: tr('СТРАНА / REG', 'COUNTRY / REG'), options: uniqueMilCountries },
+                { key: 'military_aircraft_type', label: tr('ТИП БОРТА', 'AIRCRAFT TYPE'), options: uniqueMilAircraftTypes },
             ]
         },
         tracked: {
-            title: 'TRACKED AIRCRAFT',
+            title: tr('ОТСЛЕЖИВАЕМЫЕ БОРТА', 'TRACKED AIRCRAFT'),
             icon: <Star size={13} className="text-pink-400" />,
             accentColor: '#EC4899',
             accentColorName: 'pink',
             fields: [
-                { key: 'tracked_category', label: 'CATEGORY', options: uniqueTrackedCategories },
-                { key: 'tracked_owner', label: 'OPERATOR / ENTITY', options: uniqueTrackedOperators },
+                { key: 'tracked_category', label: tr('КАТЕГОРИЯ', 'CATEGORY'), options: uniqueTrackedCategories },
+                { key: 'tracked_owner', label: tr('ОПЕРАТОР / ENTITY', 'OPERATOR / ENTITY'), options: uniqueTrackedOperators },
             ]
         },
         ships: {
-            title: 'MARITIME VESSELS',
+            title: tr('МОРСКИЕ СУДА', 'MARITIME VESSELS'),
             icon: <Ship size={13} className="text-blue-400" />,
             accentColor: '#3B82F6',
             accentColorName: 'blue',
             fields: [
-                { key: 'ship_name', label: 'VESSEL NAME', options: uniqueShipNames },
-                { key: 'ship_type', label: 'VESSEL TYPE', options: uniqueVesselTypes },
+                { key: 'ship_name', label: tr('НАЗВАНИЕ СУДНА', 'VESSEL NAME'), options: uniqueShipNames },
+                { key: 'ship_type', label: tr('ТИП СУДНА', 'VESSEL TYPE'), options: uniqueVesselTypes },
             ]
         }
     };
@@ -217,11 +221,11 @@ export default function FilterPanel({ data, activeFilters, setActiveFilters }: F
     };
 
     const sections = [
-        { key: 'commercial', title: 'COMMERCIAL FLIGHTS', icon: <Plane size={11} className="text-cyan-400" />, color: 'cyan' },
-        { key: 'private', title: 'PRIVATE / JETS', icon: <Plane size={11} className="text-orange-400" />, color: 'orange' },
-        { key: 'military', title: 'MILITARY', icon: <Shield size={11} className="text-yellow-400" />, color: 'yellow' },
-        { key: 'tracked', title: 'TRACKED AIRCRAFT', icon: <Star size={11} className="text-pink-400" />, color: 'pink' },
-        { key: 'ships', title: 'MARITIME VESSELS', icon: <Ship size={11} className="text-blue-400" />, color: 'blue' },
+        { key: 'commercial', title: tr('КОММЕРЧЕСКИЕ РЕЙСЫ', 'COMMERCIAL FLIGHTS'), icon: <Plane size={11} className="text-cyan-400" />, color: 'cyan' },
+        { key: 'private', title: tr('ЧАСТНЫЕ / ДЖЕТЫ', 'PRIVATE / JETS'), icon: <Plane size={11} className="text-orange-400" />, color: 'orange' },
+        { key: 'military', title: tr('ВОЕННЫЕ', 'MILITARY'), icon: <Shield size={11} className="text-yellow-400" />, color: 'yellow' },
+        { key: 'tracked', title: tr('ОТСЛЕЖИВАЕМЫЕ БОРТА', 'TRACKED AIRCRAFT'), icon: <Star size={11} className="text-pink-400" />, color: 'pink' },
+        { key: 'ships', title: tr('МОРСКИЕ СУДА', 'MARITIME VESSELS'), icon: <Ship size={11} className="text-blue-400" />, color: 'blue' },
     ];
 
     const borderColors: Record<string, string> = {
@@ -261,10 +265,10 @@ export default function FilterPanel({ data, activeFilters, setActiveFilters }: F
                 >
                     <div className="flex items-center gap-2">
                         <Filter size={12} className="text-cyan-500" />
-                        <span className="text-[10px] text-gray-500 font-mono tracking-widest">DATA FILTERS</span>
+                        <span className="text-[10px] text-gray-500 font-mono tracking-widest">{tr("ФИЛЬТРЫ ДАННЫХ", "DATA FILTERS")}</span>
                         {activeCount > 0 && (
                             <span className="text-[9px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded-sm">
-                                {activeCount} ACTIVE
+                                {activeCount} {tr("АКТИВНО", "ACTIVE")}
                             </span>
                         )}
                     </div>
@@ -286,7 +290,7 @@ export default function FilterPanel({ data, activeFilters, setActiveFilters }: F
                                     onClick={clearAll}
                                     className="text-[9px] text-red-400 hover:text-red-300 tracking-widest self-end mb-1"
                                 >
-                                    CLEAR ALL FILTERS
+                                    {tr("СБРОСИТЬ ВСЕ ФИЛЬТРЫ", "CLEAR ALL FILTERS")}
                                 </button>
                             )}
 
@@ -331,6 +335,7 @@ export default function FilterPanel({ data, activeFilters, setActiveFilters }: F
                         activeFilters={activeFilters}
                         onApply={(filters) => handleModalApply(openModal, filters)}
                         onClose={() => setOpenModal(null)}
+                        language={lang}
                     />
                 )}
             </AnimatePresence>

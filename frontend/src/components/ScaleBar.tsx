@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { Ruler, X, Trash2 } from "lucide-react";
+import React, { useState, useMemo, useCallback, useRef } from "react";
+import { Ruler, Trash2 } from "lucide-react";
+import type { AppLanguage } from "@/lib/threatRegulations";
 
 /**
  * Dynamic Scale Bar with:
@@ -9,9 +10,6 @@ import { Ruler, X, Trash2 } from "lucide-react";
  *   2. Draggable right edge to manually resize the ruler
  *   3. Measurement mode toggle — lets the user place up to 3 waypoints on the map
  */
-
-const NICE_METRIC = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000];
-const NICE_IMPERIAL = [0.1, 0.25, 0.5, 1, 2, 5, 10, 25, 50, 100, 200, 500, 1000, 2000, 5000];
 
 const MILES_PER_METER = 0.000621371;
 const KM_PER_METER = 0.001;
@@ -42,14 +40,17 @@ interface ScaleBarProps {
     measurePoints?: MeasurePoint[];
     onToggleMeasure?: () => void;
     onClearMeasure?: () => void;
+    language?: AppLanguage;
 }
 
-function ScaleBar({ zoom, latitude, measureMode, measurePoints, onToggleMeasure, onClearMeasure }: ScaleBarProps) {
+function ScaleBar({ zoom, latitude, measureMode, measurePoints, onToggleMeasure, onClearMeasure, language }: ScaleBarProps) {
     const [unit, setUnit] = useState<"mi" | "km">("mi");
     const [barWidth, setBarWidth] = useState(120); // current bar width in px
     const dragging = useRef(false);
     const startX = useRef(0);
     const startW = useRef(0);
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
 
     const MIN_BAR = 60;
     const MAX_BAR = 280;
@@ -126,7 +127,7 @@ function ScaleBar({ zoom, latitude, measureMode, measurePoints, onToggleMeasure,
                     <div
                         className="w-2 h-3 bg-cyan-400/80 rounded-r cursor-ew-resize flex-shrink-0 hover:bg-cyan-300 transition-colors"
                         onPointerDown={onPointerDown}
-                        title="Drag to resize scale"
+                        title={tr("Потяните для изменения шкалы", "Drag to resize scale")}
                         style={{ touchAction: "none" }}
                     />
                 </div>
@@ -137,7 +138,7 @@ function ScaleBar({ zoom, latitude, measureMode, measurePoints, onToggleMeasure,
             <button
                 onClick={() => setUnit(u => u === "mi" ? "km" : "mi")}
                 className="text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded border border-gray-700 hover:border-cyan-500/50 text-gray-500 hover:text-cyan-400 transition-all hover:bg-cyan-950/20 uppercase"
-                title={`Switch to ${unit === "mi" ? "Metric (km)" : "Imperial (mi)"}`}
+                title={tr(`Переключить в ${unit === "mi" ? "метрическую (км)" : "имперскую (ми)"}`, `Switch to ${unit === "mi" ? "Metric (km)" : "Imperial (mi)"}`)}
             >
                 {unit === "mi" ? "MI" : "KM"}
             </button>
@@ -149,10 +150,10 @@ function ScaleBar({ zoom, latitude, measureMode, measurePoints, onToggleMeasure,
                         ? "border-cyan-500/60 text-cyan-400 bg-cyan-950/30 shadow-[0_0_8px_rgba(0,255,255,0.2)]"
                         : "border-gray-700 text-gray-500 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-cyan-950/20"
                     }`}
-                title={measureMode ? "Exit measurement mode" : "Measure distance (click up to 3 points)"}
+                title={measureMode ? tr("Выйти из режима измерений", "Exit measurement mode") : tr("Измерить дистанцию (до 3 точек)", "Measure distance (click up to 3 points)")}
             >
                 <Ruler size={10} />
-                {measureMode ? "MEASURING" : "MEASURE"}
+                {measureMode ? tr("ИЗМЕРЕНИЕ", "MEASURING") : tr("ИЗМЕРИТЬ", "MEASURE")}
             </button>
 
             {/* Clear measurements */}
@@ -160,7 +161,7 @@ function ScaleBar({ zoom, latitude, measureMode, measurePoints, onToggleMeasure,
                 <button
                     onClick={onClearMeasure}
                     className="flex items-center gap-1 text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded border border-gray-700 text-gray-500 hover:text-red-400 hover:border-red-500/50 hover:bg-red-950/20 transition-all"
-                    title="Clear all waypoints"
+                    title={tr("Очистить все точки", "Clear all waypoints")}
                 >
                     <Trash2 size={10} />
                 </button>

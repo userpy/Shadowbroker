@@ -6,6 +6,7 @@ import { AlertTriangle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import React, { useEffect, useRef, useCallback } from 'react';
 import Hls from 'hls.js';
 import WikiImage from '@/components/WikiImage';
+import type { AppLanguage } from "@/lib/threatRegulations";
 
 // HLS video player — uses hls.js on Chrome/Firefox, native on Safari
 function HlsVideo({ url, className }: { url: string; className?: string }) {
@@ -154,10 +155,26 @@ const VESSEL_TYPE_WIKI: Record<string, string> = {
     'military_vessel': 'https://en.wikipedia.org/wiki/Warship',
 };
 
-function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoading }: { data: any, selectedEntity?: { type: string, id: string | number, name?: string, callsign?: string, media_url?: string, extra?: any } | null, regionDossier?: any, regionDossierLoading?: boolean }) {
+function NewsFeedInner({
+    data,
+    selectedEntity,
+    regionDossier,
+    regionDossierLoading,
+    language,
+}: {
+    data: any,
+    selectedEntity?: { type: string, id: string | number, name?: string, callsign?: string, media_url?: string, extra?: any } | null,
+    regionDossier?: any,
+    regionDossierLoading?: boolean,
+    language?: AppLanguage,
+}) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [expandedIndexes, setExpandedIndexes] = useState<number[]>([]);
     const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const lang: AppLanguage = language || "ru";
+    const tr = useCallback((ru: string, en: string) => (lang === "ru" ? ru : en), [lang]);
+    const uiLocale = lang === "ru" ? "ru-RU" : "en-US";
+    const levelLabel = tr("УРОВЕНЬ", "LVL");
 
     // Intentionally omitting map click triggers for expanding
     // as we now show a contextual pop-up on the map directly.
@@ -198,46 +215,46 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 className="w-full bg-black/60 backdrop-blur-md border border-emerald-800 rounded-xl flex flex-col z-10 font-mono shadow-[0_4px_30px_rgba(0,255,128,0.2)] pointer-events-auto overflow-hidden flex-shrink-0"
             >
                 <div className="p-3 border-b border-emerald-500/30 bg-emerald-950/40 flex justify-between items-center">
-                    <h2 className="text-xs tracking-widest font-bold text-emerald-400">REGION DOSSIER</h2>
+                    <h2 className="text-xs tracking-widest font-bold text-emerald-400">{tr("ДОСЬЕ РЕГИОНА", "REGION DOSSIER")}</h2>
                     <span className="text-[8px] text-gray-500">
                         {selectedEntity.extra ? `${selectedEntity.extra.lat.toFixed(3)}, ${selectedEntity.extra.lng.toFixed(3)}` : ''}
                     </span>
                 </div>
                 {regionDossierLoading ? (
                     <div className="p-6 flex items-center justify-center">
-                        <span className="text-emerald-400 text-[10px] font-mono animate-pulse tracking-widest">COMPILING INTELLIGENCE...</span>
+                        <span className="text-emerald-400 text-[10px] font-mono animate-pulse tracking-widest">{tr("СБОР РАЗВЕДДАННЫХ...", "COMPILING INTELLIGENCE...")}</span>
                     </div>
                 ) : d && !d.error ? (
                     <div className="p-3 flex flex-col gap-1.5 max-h-[500px] overflow-y-auto styled-scrollbar text-[10px]">
                         {/* COUNTRY */}
-                        <div className="text-[9px] text-emerald-500 tracking-widest font-bold border-b border-emerald-900/50 pb-1">COUNTRY LEVEL {d.country?.flag_emoji || ''}</div>
-                        <div className="flex justify-between"><span className="text-gray-500">COUNTRY</span><span className="text-white font-bold">{d.country?.name}</span></div>
+                        <div className="text-[9px] text-emerald-500 tracking-widest font-bold border-b border-emerald-900/50 pb-1">{tr("УРОВЕНЬ СТРАНЫ", "COUNTRY LEVEL")} {d.country?.flag_emoji || ''}</div>
+                        <div className="flex justify-between"><span className="text-gray-500">{tr("СТРАНА", "COUNTRY")}</span><span className="text-white font-bold">{d.country?.name}</span></div>
                         {d.country?.official_name && d.country.official_name !== d.country.name && (
-                            <div className="flex justify-between"><span className="text-gray-500">OFFICIAL</span><span className="text-gray-300 text-right max-w-[180px]">{d.country.official_name}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">{tr("ОФИЦИАЛЬНО", "OFFICIAL")}</span><span className="text-gray-300 text-right max-w-[180px]">{d.country.official_name}</span></div>
                         )}
-                        <div className="flex justify-between"><span className="text-gray-500">LEADER</span><span className="text-emerald-400 font-bold">{d.country?.leader}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">GOVERNMENT</span><span className="text-white font-bold text-right max-w-[180px]">{d.country?.government_type}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">POPULATION</span><span className="text-white font-bold">{d.country?.population?.toLocaleString()}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">CAPITAL</span><span className="text-white font-bold">{d.country?.capital}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">LANGUAGES</span><span className="text-white text-right max-w-[180px]">{d.country?.languages?.join(', ')}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{tr("ЛИДЕР", "LEADER")}</span><span className="text-emerald-400 font-bold">{d.country?.leader}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{tr("ПРАВЛЕНИЕ", "GOVERNMENT")}</span><span className="text-white font-bold text-right max-w-[180px]">{d.country?.government_type}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{tr("НАСЕЛЕНИЕ", "POPULATION")}</span><span className="text-white font-bold">{d.country?.population?.toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{tr("СТОЛИЦА", "CAPITAL")}</span><span className="text-white font-bold">{d.country?.capital}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{tr("ЯЗЫКИ", "LANGUAGES")}</span><span className="text-white text-right max-w-[180px]">{d.country?.languages?.join(', ')}</span></div>
                         {d.country?.currencies?.length > 0 && (
-                            <div className="flex justify-between"><span className="text-gray-500">CURRENCY</span><span className="text-white text-right max-w-[180px]">{d.country.currencies.join(', ')}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">{tr("ВАЛЮТА", "CURRENCY")}</span><span className="text-white text-right max-w-[180px]">{d.country.currencies.join(', ')}</span></div>
                         )}
-                        <div className="flex justify-between"><span className="text-gray-500">REGION</span><span className="text-white">{d.country?.subregion || d.country?.region}</span></div>
+                        <div className="flex justify-between"><span className="text-gray-500">{tr("РЕГИОН", "REGION")}</span><span className="text-white">{d.country?.subregion || d.country?.region}</span></div>
                         {d.country?.area_km2 > 0 && (
-                            <div className="flex justify-between"><span className="text-gray-500">AREA</span><span className="text-white">{d.country.area_km2.toLocaleString()} km²</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">{tr("ПЛОЩАДЬ", "AREA")}</span><span className="text-white">{d.country.area_km2.toLocaleString()} km²</span></div>
                         )}
 
                         {/* LOCAL */}
                         {(d.local?.name || d.local?.state) && (
                             <>
-                                <div className="text-[9px] text-emerald-500 tracking-widest font-bold border-b border-emerald-900/50 pb-1 mt-2">LOCAL LEVEL</div>
-                                {d.local.name && <div className="flex justify-between"><span className="text-gray-500">LOCALITY</span><span className="text-white font-bold">{d.local.name}</span></div>}
-                                {d.local.state && <div className="flex justify-between"><span className="text-gray-500">STATE/PROVINCE</span><span className="text-white font-bold">{d.local.state}</span></div>}
-                                {d.local.description && <div className="flex justify-between"><span className="text-gray-500">TYPE</span><span className="text-gray-300">{d.local.description}</span></div>}
+                                <div className="text-[9px] text-emerald-500 tracking-widest font-bold border-b border-emerald-900/50 pb-1 mt-2">{tr("ЛОКАЛЬНЫЙ УРОВЕНЬ", "LOCAL LEVEL")}</div>
+                                {d.local.name && <div className="flex justify-between"><span className="text-gray-500">{tr("ЛОКАЦИЯ", "LOCALITY")}</span><span className="text-white font-bold">{d.local.name}</span></div>}
+                                {d.local.state && <div className="flex justify-between"><span className="text-gray-500">{tr("ШТАТ/ПРОВИНЦИЯ", "STATE/PROVINCE")}</span><span className="text-white font-bold">{d.local.state}</span></div>}
+                                {d.local.description && <div className="flex justify-between"><span className="text-gray-500">{tr("ТИП", "TYPE")}</span><span className="text-gray-300">{d.local.description}</span></div>}
                                 {d.local.summary && (
                                     <div className="mt-1 p-2 bg-black/60 border border-emerald-800/50 rounded text-[9px] text-gray-300 leading-relaxed">
-                                        <span className="text-emerald-400 font-bold">&gt;_ INTEL: </span>
+                                        <span className="text-emerald-400 font-bold">&gt;_ {tr("ИНТЕЛ:", "INTEL:")} </span>
                                         {d.local.summary.length > 500 ? d.local.summary.substring(0, 500) + '...' : d.local.summary}
                                     </div>
                                 )}
@@ -247,7 +264,7 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 ) : d?.error ? (
                     <div className="p-4 text-gray-400 text-[10px]">{d.error}</div>
                 ) : (
-                    <div className="p-4 text-red-400 text-[10px]">INTEL UNAVAILABLE</div>
+                    <div className="p-4 text-red-400 text-[10px]">{tr("РАЗВЕДДАННЫЕ НЕДОСТУПНЫ", "INTEL UNAVAILABLE")}</div>
                 )}
             </motion.div>
         );
@@ -256,7 +273,7 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
     if (selectedEntity?.type === 'tracked_flight') {
         const flight = data?.tracked_flights?.[selectedEntity.id as number];
         if (flight) {
-            const callsign = flight.callsign || "UNKNOWN";
+            const callsign = flight.callsign || tr("НЕИЗВЕСТНО", "UNKNOWN");
             const alertColorMap: Record<string, string> = {
                 'pink': 'text-pink-400', 'red': 'text-red-400',
                 'darkblue': 'text-blue-400', 'white': 'text-white'
@@ -283,26 +300,26 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 >
                     <div className={`p-3 border-b ${borderColor} ${bgColor} flex justify-between items-center`}>
                         <h2 className={`text-xs tracking-widest font-bold ${headerColor} flex items-center gap-2`}>
-                            ⚠ TRACKED AIRCRAFT — {flight.alert_category || "ALERT"}
+                            ⚠ {tr("ОТСЛЕЖИВАЕМЫЙ БОРТ", "TRACKED AIRCRAFT")} — {flight.alert_category || tr("ТРЕВОГА", "ALERT")}
                         </h2>
                         <span className="text-[10px] text-gray-500 font-mono">TRK: {callsign}</span>
                     </div>
 
                     <div className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">OPERATOR</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ОПЕРАТОР", "OPERATOR")}</span>
                             {flight.alert_operator && flight.alert_operator !== "UNKNOWN" ? (
                                 <a
                                     href={`https://en.wikipedia.org/wiki/${encodeURIComponent(flight.alert_operator.replace(/ /g, '_'))}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className={`text-xs font-bold underline ${headerColor} hover:opacity-80 transition-opacity`}
-                                    title={`Search Wikipedia for ${flight.alert_operator}`}
+                                    title={tr(`Поиск в Wikipedia: ${flight.alert_operator}`, `Search Wikipedia for ${flight.alert_operator}`)}
                                 >
                                     {flight.alert_operator}
                                 </a>
                             ) : (
-                                <span className={`text-xs font-bold ${headerColor}`}>UNKNOWN</span>
+                                <span className={`text-xs font-bold ${headerColor}`}>{tr("НЕИЗВЕСТНО", "UNKNOWN")}</span>
                             )}
                         </div>
                         {/* Owner/Operator Wikipedia photo */}
@@ -329,72 +346,72 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                                 {aircraftWikiUrl && (
                                     <a href={aircraftWikiUrl} target="_blank" rel="noopener noreferrer"
                                         className="text-[10px] text-cyan-400 hover:text-cyan-300 underline mt-1 inline-block">
-                                        📖 {AIRCRAFT_WIKI[flight.model] || flight.model} — Wikipedia →
+                                        📖 {AIRCRAFT_WIKI[flight.model] || flight.model} — {tr("Wikipedia", "Wikipedia")} →
                                     </a>
                                 )}
                             </div>
                         )}
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">CATEGORY</span>
-                            <span className={`text-xs font-bold ${headerColor}`}>{flight.alert_category || "N/A"}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("КАТЕГОРИЯ", "CATEGORY")}</span>
+                            <span className={`text-xs font-bold ${headerColor}`}>{flight.alert_category || tr("Н/Д", "N/A")}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">AIRCRAFT</span>
-                            <span className="text-white text-xs font-bold">{flight.alert_type || flight.model || "UNKNOWN"}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("БОРТ", "AIRCRAFT")}</span>
+                            <span className="text-white text-xs font-bold">{flight.alert_type || flight.model || tr("НЕИЗВЕСТНО", "UNKNOWN")}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">REGISTRATION</span>
-                            <span className="text-white text-xs font-bold">{flight.registration || "N/A"}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("РЕГИСТРАЦИЯ", "REGISTRATION")}</span>
+                            <span className="text-white text-xs font-bold">{flight.registration || tr("Н/Д", "N/A")}</span>
                         </div>
                         {flight.alert_tag1 && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">INTEL TAG</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ТЕГ INTEL", "INTEL TAG")}</span>
                                 <span className={`text-xs font-bold ${headerColor}`}>{flight.alert_tag1}</span>
                             </div>
                         )}
                         {flight.alert_tag2 && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">SECONDARY</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ВТОРИЧНО", "SECONDARY")}</span>
                                 <span className="text-white text-xs font-bold">{flight.alert_tag2}</span>
                             </div>
                         )}
                         {flight.alert_tag3 && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">DETAIL</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ДЕТАЛЬ", "DETAIL")}</span>
                                 <span className="text-gray-400 text-xs">{flight.alert_tag3}</span>
                             </div>
                         )}
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">ALTITUDE</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ВЫСОТА", "ALTITUDE")}</span>
                             <span className="text-white text-xs font-bold">{(Math.round((flight.alt || 0) / 0.3048)).toLocaleString()} ft</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">GROUND SPEED</span>
-                            <span className="text-white text-xs font-bold">{flight.speed_knots ? `${flight.speed_knots} kts` : 'N/A'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("СКОРОСТЬ", "GROUND SPEED")}</span>
+                            <span className="text-white text-xs font-bold">{flight.speed_knots ? `${flight.speed_knots} kts` : tr('Н/Д', 'N/A')}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">HEADING</span>
+                            <span className="text-gray-500 text-[10px]">{tr("КУРС", "HEADING")}</span>
                             <span className="text-white text-xs font-bold">{Math.round(flight.heading || 0)}°</span>
                         </div>
                         {flight.squawk && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
                                 <span className="text-gray-500 text-[10px]">SQUAWK</span>
-                                <span className={`text-xs font-bold ${flight.squawk === '7700' ? 'text-red-400 animate-pulse' : flight.squawk === '7600' ? 'text-yellow-400' : 'text-white'}`}>{flight.squawk}{flight.squawk === '7700' ? ' ⚠ EMERGENCY' : flight.squawk === '7600' ? ' COMMS LOST' : ''}</span>
+                                <span className={`text-xs font-bold ${flight.squawk === '7700' ? 'text-red-400 animate-pulse' : flight.squawk === '7600' ? 'text-yellow-400' : 'text-white'}`}>{flight.squawk}{flight.squawk === '7700' ? ` ⚠ ${tr("АВАРИЯ", "EMERGENCY")}` : flight.squawk === '7600' ? ` ${tr("СВЯЗЬ ПОТЕРЯНА", "COMMS LOST")}` : ''}</span>
                             </div>
                         )}
                         {flight.alert_link && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">REFERENCE</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ИСТОЧНИК", "REFERENCE")}</span>
                                 <a href={flight.alert_link} target="_blank" rel="noreferrer" className={`text-xs font-bold underline ${headerColor} hover:opacity-80`}>
-                                    View Intel Source
+                                    {tr("Открыть источник", "View Intel Source")}
                                 </a>
                             </div>
                         )}
                         {flight.icao24 && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">FLIGHT RECORD</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ИСТОРИЯ РЕЙСА", "FLIGHT RECORD")}</span>
                                 <a href={`https://adsb.lol/?icao=${flight.icao24}`} target="_blank" rel="noreferrer" className={`${headerColor} hover:opacity-80 text-xs font-bold underline`}>
-                                    View History Log
+                                    {tr("Открыть историю", "View History Log")}
                                 </a>
                             </div>
                         )}
@@ -412,15 +429,15 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
         const flight = flightsList?.[selectedEntity.id as number];
 
         if (flight) {
-            const callsign = flight.callsign || "UNKNOWN";
-            let airline = "UNKNOWN";
+            const callsign = flight.callsign || tr("НЕИЗВЕСТНО", "UNKNOWN");
+            let airline = tr("НЕИЗВЕСТНО", "UNKNOWN");
 
             if (selectedEntity.type === 'military_flight') {
-                airline = "MILITARY ASSET";
+                airline = tr("ВОЕННЫЙ БОРТ", "MILITARY ASSET");
             } else if (selectedEntity.type === 'private_jet') {
-                airline = "PRIVATE JET";
+                airline = tr("ЧАСТНЫЙ ДЖЕТ", "PRIVATE JET");
             } else if (selectedEntity.type === 'private_flight') {
-                airline = "PRIVATE / GA";
+                airline = tr("ЧАСТНЫЙ / GA", "PRIVATE / GA");
             } else if (flight.airline_code) {
                 // Use the airline code resolved from adsb.lol routeset API
                 const codeMap: Record<string, string> = {
@@ -436,8 +453,8 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                     "QTR": "QATAR AIRWAYS", "ETD": "ETIHAD AIRWAYS", "SAS": "SAS SCANDINAVIAN"
                 };
                 airline = codeMap[flight.airline_code] || flight.airline_code;
-            } else if (callsign !== "UNKNOWN") {
-                airline = "COMMERCIAL FLIGHT";
+            } else if (callsign !== tr("НЕИЗВЕСТНО", "UNKNOWN")) {
+                airline = tr("КОММЕРЧЕСКИЙ РЕЙС", "COMMERCIAL FLIGHT");
             }
 
             return (
@@ -449,23 +466,29 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 >
                     <div className="p-3 border-b border-cyan-500/30 bg-cyan-950/40 flex justify-between items-center">
                         <h2 className={`text-xs tracking-widest font-bold ${selectedEntity.type === 'military_flight' ? 'text-red-400' : selectedEntity.type === 'private_flight' ? 'text-orange-400' : selectedEntity.type === 'private_jet' ? 'text-purple-400' : 'text-cyan-400'} flex items-center gap-2`}>
-                            {selectedEntity.type === 'military_flight' ? "MILITARY BOGEY INTERCEPT" : selectedEntity.type === 'private_flight' ? "PRIVATE TRANSPONDER" : selectedEntity.type === 'private_jet' ? "PRIVATE JET TRANSPONDER" : "COMMERCIAL TRANSPONDER"}
+                            {selectedEntity.type === 'military_flight'
+                                ? tr("ПЕРЕХВАТ ВОЕННОГО БОРТА", "MILITARY BOGEY INTERCEPT")
+                                : selectedEntity.type === 'private_flight'
+                                    ? tr("ЧАСТНЫЙ ТРАНСПОНДЕР", "PRIVATE TRANSPONDER")
+                                    : selectedEntity.type === 'private_jet'
+                                        ? tr("ТРАНСПОНДЕР ЧАСТНОГО ДЖЕТА", "PRIVATE JET TRANSPONDER")
+                                        : tr("КОММЕРЧЕСКИЙ ТРАНСПОНДЕР", "COMMERCIAL TRANSPONDER")}
                         </h2>
                         <span className="text-[10px] text-gray-500 font-mono">TRK: {callsign}</span>
                     </div>
 
                     <div className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">OPERATOR</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ОПЕРАТОР", "OPERATOR")}</span>
                             <span className="text-white text-xs font-bold">{airline}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">REGISTRATION</span>
-                            <span className="text-white text-xs font-bold">{flight.registration || "N/A"}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("РЕГИСТРАЦИЯ", "REGISTRATION")}</span>
+                            <span className="text-white text-xs font-bold">{flight.registration || tr("Н/Д", "N/A")}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">AIRCRAFT MODEL</span>
-                            <span className="text-white text-xs font-bold">{flight.model || "UNKNOWN"}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("МОДЕЛЬ БОРТА", "AIRCRAFT MODEL")}</span>
+                            <span className="text-white text-xs font-bold">{flight.model || tr("НЕИЗВЕСТНО", "UNKNOWN")}</span>
                         </div>
                         {/* Aircraft photo + Wikipedia link */}
                         {(aircraftImgUrl || aircraftImgLoading || aircraftWikiUrl) && (
@@ -486,38 +509,38 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                                 {aircraftWikiUrl && (
                                     <a href={aircraftWikiUrl} target="_blank" rel="noopener noreferrer"
                                         className="text-[10px] text-cyan-400 hover:text-cyan-300 underline mt-1 inline-block">
-                                        📖 {AIRCRAFT_WIKI[flight.model] || flight.model} — Wikipedia →
+                                        📖 {AIRCRAFT_WIKI[flight.model] || flight.model} — {tr("Wikipedia", "Wikipedia")} →
                                     </a>
                                 )}
                             </div>
                         )}
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">ALTITUDE</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ВЫСОТА", "ALTITUDE")}</span>
                             <span className="text-white text-xs font-bold">{(Math.round((flight.alt || 0) / 0.3048)).toLocaleString()} ft</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">GROUND SPEED</span>
-                            <span className="text-white text-xs font-bold">{flight.speed_knots ? `${flight.speed_knots} kts` : 'N/A'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("СКОРОСТЬ", "GROUND SPEED")}</span>
+                            <span className="text-white text-xs font-bold">{flight.speed_knots ? `${flight.speed_knots} kts` : tr('Н/Д', 'N/A')}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">HEADING</span>
+                            <span className="text-gray-500 text-[10px]">{tr("КУРС", "HEADING")}</span>
                             <span className="text-white text-xs font-bold">{Math.round(flight.heading || 0)}°</span>
                         </div>
                         {flight.squawk && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
                                 <span className="text-gray-500 text-[10px]">SQUAWK</span>
-                                <span className={`text-xs font-bold ${flight.squawk === '7700' ? 'text-red-400 animate-pulse' : flight.squawk === '7600' ? 'text-yellow-400' : 'text-white'}`}>{flight.squawk}{flight.squawk === '7700' ? ' ⚠ EMERGENCY' : flight.squawk === '7600' ? ' COMMS LOST' : ''}</span>
+                                <span className={`text-xs font-bold ${flight.squawk === '7700' ? 'text-red-400 animate-pulse' : flight.squawk === '7600' ? 'text-yellow-400' : 'text-white'}`}>{flight.squawk}{flight.squawk === '7700' ? ` ⚠ ${tr("АВАРИЯ", "EMERGENCY")}` : flight.squawk === '7600' ? ` ${tr("СВЯЗЬ ПОТЕРЯНА", "COMMS LOST")}` : ''}</span>
                             </div>
                         )}
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">ROUTE</span>
-                            <span className="text-cyan-400 text-xs font-bold">{flight.origin_name !== "UNKNOWN" ? `[${flight.origin_name}] → [${flight.dest_name}]` : "UNKNOWN"}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("МАРШРУТ", "ROUTE")}</span>
+                            <span className="text-cyan-400 text-xs font-bold">{flight.origin_name !== "UNKNOWN" ? `[${flight.origin_name}] → [${flight.dest_name}]` : tr("НЕИЗВЕСТНО", "UNKNOWN")}</span>
                         </div>
                         {flight.icao24 && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">FLIGHT RECORD</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ИСТОРИЯ РЕЙСА", "FLIGHT RECORD")}</span>
                                 <a href={`https://adsb.lol/?icao=${flight.icao24}`} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 text-xs font-bold underline">
-                                    View History Log
+                                    {tr("Открыть историю", "View History Log")}
                                 </a>
                             </div>
                         )}
@@ -531,14 +554,14 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
         const ship = data?.ships?.[selectedEntity.id as number];
         if (ship) {
             const vesselTypeLabels: Record<string, string> = {
-                'tanker': 'TANKER',
-                'cargo': 'CARGO VESSEL',
-                'passenger': 'PASSENGER / CRUISE',
-                'yacht': 'PRIVATE YACHT',
-                'military_vessel': 'MILITARY VESSEL',
-                'carrier': 'AIRCRAFT CARRIER',
+                'tanker': tr('ТАНКЕР', 'TANKER'),
+                'cargo': tr('ГРУЗОВОЕ СУДНО', 'CARGO VESSEL'),
+                'passenger': tr('ПАССАЖИРСКОЕ / КРУИЗ', 'PASSENGER / CRUISE'),
+                'yacht': tr('ЧАСТНАЯ ЯХТА', 'PRIVATE YACHT'),
+                'military_vessel': tr('ВОЕННОЕ СУДНО', 'MILITARY VESSEL'),
+                'carrier': tr('АВИАНОСЕЦ', 'AIRCRAFT CARRIER'),
             };
-            const typeLabel = vesselTypeLabels[ship.type] || ship.type?.toUpperCase() || 'VESSEL';
+            const typeLabel = vesselTypeLabels[ship.type] || ship.type?.toUpperCase() || tr('СУДНО', 'VESSEL');
 
             const headerColorMap: Record<string, string> = {
                 'tanker': 'text-red-400',
@@ -551,14 +574,14 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
             const headerColor = headerColorMap[ship.type] || 'text-gray-400';
 
             const headerTitleMap: Record<string, string> = {
-                'tanker': 'AIS TANKER INTERCEPT',
-                'cargo': 'AIS CARGO INTERCEPT',
-                'passenger': 'AIS PASSENGER VESSEL',
-                'yacht': 'AIS YACHT SIGNAL',
-                'military_vessel': 'AIS MILITARY VESSEL',
-                'carrier': 'CARRIER STRIKE GROUP',
+                'tanker': tr('AIS ПЕРЕХВАТ ТАНКЕРА', 'AIS TANKER INTERCEPT'),
+                'cargo': tr('AIS ПЕРЕХВАТ ГРУЗОВОГО СУДНА', 'AIS CARGO INTERCEPT'),
+                'passenger': tr('AIS ПАССАЖИРСКОЕ СУДНО', 'AIS PASSENGER VESSEL'),
+                'yacht': tr('AIS СИГНАЛ ЯХТЫ', 'AIS YACHT SIGNAL'),
+                'military_vessel': tr('AIS ВОЕННОЕ СУДНО', 'AIS MILITARY VESSEL'),
+                'carrier': tr('АВИАНОСНАЯ УДАРНАЯ ГРУППА', 'CARRIER STRIKE GROUP'),
             };
-            const headerTitle = headerTitleMap[ship.type] || 'AIS VESSEL SIGNAL';
+            const headerTitle = headerTitleMap[ship.type] || tr('AIS СИГНАЛ СУДНА', 'AIS VESSEL SIGNAL');
 
             return (
                 <motion.div
@@ -571,51 +594,51 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                         <h2 className={`text-xs tracking-widest font-bold ${headerColor} flex items-center gap-2`}>
                             {headerTitle}
                         </h2>
-                        <span className="text-[10px] text-gray-500 font-mono">MMSI: {ship.mmsi || 'N/A'}</span>
+                        <span className="text-[10px] text-gray-500 font-mono">MMSI: {ship.mmsi || tr('Н/Д', 'N/A')}</span>
                     </div>
 
                     <div className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">VESSEL NAME</span>
-                            <span className="text-white text-xs font-bold text-right ml-4">{ship.name || 'UNKNOWN'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr('НАЗВАНИЕ СУДНА', 'VESSEL NAME')}</span>
+                            <span className="text-white text-xs font-bold text-right ml-4">{ship.name || tr('НЕИЗВЕСТНО', 'UNKNOWN')}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">VESSEL TYPE</span>
+                            <span className="text-gray-500 text-[10px]">{tr('ТИП СУДНА', 'VESSEL TYPE')}</span>
                             <span className={`text-xs font-bold ${headerColor}`}>{typeLabel}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">FLAG STATE</span>
-                            <span className="text-white text-xs font-bold">{ship.country || 'UNKNOWN'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr('ФЛАГ', 'FLAG STATE')}</span>
+                            <span className="text-white text-xs font-bold">{ship.country || tr('НЕИЗВЕСТНО', 'UNKNOWN')}</span>
                         </div>
                         {ship.callsign && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">CALLSIGN</span>
+                                <span className="text-gray-500 text-[10px]">{tr('ПОЗЫВНОЙ', 'CALLSIGN')}</span>
                                 <span className="text-white text-xs font-bold">{ship.callsign}</span>
                             </div>
                         )}
                         {ship.imo > 0 && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">IMO NUMBER</span>
+                                <span className="text-gray-500 text-[10px]">{tr('НОМЕР IMO', 'IMO NUMBER')}</span>
                                 <span className="text-white text-xs font-bold">{ship.imo}</span>
                             </div>
                         )}
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">DESTINATION</span>
-                            <span className={`text-xs font-bold ${ship.destination && ship.destination !== 'UNKNOWN' ? 'text-cyan-400' : 'text-orange-400'}`}>{ship.destination || 'UNKNOWN'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr('НАЗНАЧЕНИЕ', 'DESTINATION')}</span>
+                            <span className={`text-xs font-bold ${ship.destination && ship.destination !== 'UNKNOWN' ? 'text-cyan-400' : 'text-orange-400'}`}>{ship.destination || tr('НЕИЗВЕСТНО', 'UNKNOWN')}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">SPEED (SOG)</span>
-                            <span className="text-white text-xs font-bold">{ship.type === 'carrier' ? 'UNKNOWN' : `${ship.sog || 0} kts`}</span>
+                            <span className="text-gray-500 text-[10px]">{tr('СКОРОСТЬ (SOG)', 'SPEED (SOG)')}</span>
+                            <span className="text-white text-xs font-bold">{ship.type === 'carrier' ? tr('НЕИЗВЕСТНО', 'UNKNOWN') : `${ship.sog || 0} kts`}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">COURSE (COG)</span>
-                            <span className="text-white text-xs font-bold">{ship.type === 'carrier' ? 'UNKNOWN' : `${Math.round(ship.cog || 0)}°`}</span>
+                            <span className="text-gray-500 text-[10px]">{tr('КУРС (COG)', 'COURSE (COG)')}</span>
+                            <span className="text-white text-xs font-bold">{ship.type === 'carrier' ? tr('НЕИЗВЕСТНО', 'UNKNOWN') : `${Math.round(ship.cog || 0)}°`}</span>
                         </div>
                         {ship.mmsi && (
                             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                                <span className="text-gray-500 text-[10px]">VESSEL RECORD</span>
+                                <span className="text-gray-500 text-[10px]">{tr('ИСТОРИЯ СУДНА', 'VESSEL RECORD')}</span>
                                 <a href={`https://www.marinetraffic.com/en/ais/details/ships/mmsi:${ship.mmsi}`} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 text-xs font-bold underline">
-                                    View on MarineTraffic
+                                    {tr('Открыть в MarineTraffic', 'View on MarineTraffic')}
                                 </a>
                             </div>
                         )}
@@ -649,25 +672,25 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 >
                     <div className="p-3 border-b border-orange-500/30 bg-orange-950/40 flex justify-between items-center">
                         <h2 className="text-xs tracking-widest font-bold text-orange-400 flex items-center gap-2">
-                            <AlertTriangle size={14} className="text-orange-400" /> MILITARY INCIDENT CLUSTER
+                            <AlertTriangle size={14} className="text-orange-400" /> {tr("КЛАСТЕР ВОЕННЫХ ИНЦИДЕНТОВ", "MILITARY INCIDENT CLUSTER")}
                         </h2>
                         <span className="text-[10px] text-gray-500 font-mono">ID: {selectedEntity.id}</span>
                     </div>
 
                     <div className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">LOCATION</span>
-                            <span className="text-white text-xs font-bold text-right ml-4">{props.name || 'UNKNOWN REGION'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ЛОКАЦИЯ", "LOCATION")}</span>
+                            <span className="text-white text-xs font-bold text-right ml-4">{props.name || tr('НЕИЗВЕСТНЫЙ РЕГИОН', 'UNKNOWN REGION')}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">ARTICLE COUNT</span>
+                            <span className="text-gray-500 text-[10px]">{tr("КОЛ-ВО СТАТЕЙ", "ARTICLE COUNT")}</span>
                             <span className="text-orange-400 text-xs font-bold">{props.count || 1}</span>
                         </div>
                         <div className="flex flex-col gap-2 mt-2">
-                            <span className="text-gray-500 text-[10px]">LATEST REPORTS:</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ПОСЛЕДНИЕ СВОДКИ:", "LATEST REPORTS:")}</span>
                             <div
                                 className="text-white text-xs whitespace-normal [&_a]:text-orange-400 [&_a]:underline hover:[&_a]:text-orange-300 [&_br]:mb-2"
-                                dangerouslySetInnerHTML={{ __html: props.html || 'No articles available.' }}
+                                dangerouslySetInnerHTML={{ __html: props.html || tr('Нет доступных статей.', 'No articles available.') }}
                             />
                         </div>
                     </div>
@@ -688,29 +711,29 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 >
                     <div className="p-3 border-b border-yellow-500/30 bg-yellow-950/40 flex justify-between items-center">
                         <h2 className="text-xs tracking-widest font-bold text-yellow-400 flex items-center gap-2">
-                            <AlertTriangle size={14} className="text-yellow-400" /> REGIONAL TACTICAL EVENT
+                            <AlertTriangle size={14} className="text-yellow-400" /> {tr("РЕГИОНАЛЬНОЕ ТАКТИЧЕСКОЕ СОБЫТИЕ", "REGIONAL TACTICAL EVENT")}
                         </h2>
                         <span className="text-[10px] text-gray-500 font-mono">ID: {item.id}</span>
                     </div>
 
                     <div className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">REGION</span>
-                            <span className="text-white text-xs font-bold text-right ml-4">{item.region || 'UNKNOWN'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("РЕГИОН", "REGION")}</span>
+                            <span className="text-white text-xs font-bold text-right ml-4">{item.region || tr('НЕИЗВЕСТНО', 'UNKNOWN')}</span>
                         </div>
                         <div className="flex flex-col gap-2 border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">DESCRIPTION</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ОПИСАНИЕ", "DESCRIPTION")}</span>
                             <span className="text-yellow-400 text-xs font-bold leading-tight">{item.title}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2 mt-2">
-                            <span className="text-gray-500 text-[10px]">REPORTED TIME</span>
-                            <span className="text-white text-xs font-bold">{item.timestamp || 'UNKNOWN'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ВРЕМЯ ОТЧЁТА", "REPORTED TIME")}</span>
+                            <span className="text-white text-xs font-bold">{item.timestamp || tr('НЕИЗВЕСТНО', 'UNKNOWN')}</span>
                         </div>
                         {item.link && (
                             <div className="flex justify-between items-center pb-2 mt-2">
-                                <span className="text-gray-500 text-[10px]">SOURCE</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ИСТОЧНИК", "SOURCE")}</span>
                                 <a href={item.link} target="_blank" rel="noreferrer" className="text-yellow-400 hover:text-yellow-300 text-xs font-bold underline">
-                                    View Liveuamap Report
+                                    {tr("Открыть отчёт Liveuamap", "View Liveuamap Report")}
                                 </a>
                             </div>
                         )}
@@ -732,32 +755,32 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 >
                     <div className="p-3 border-b border-red-500/30 bg-red-950/40 flex justify-between items-center">
                         <h2 className="text-xs tracking-widest font-bold text-red-400 flex items-center gap-2">
-                            <AlertTriangle size={14} className="text-red-400" /> THREAT INTERCEPT
+                            <AlertTriangle size={14} className="text-red-400" /> {tr("ПЕРЕХВАТ УГРОЗЫ", "THREAT INTERCEPT")}
                         </h2>
-                        <span className="text-[10px] text-gray-500 font-mono">LVL: {item.risk_score}/10</span>
+                        <span className="text-[10px] text-gray-500 font-mono">{levelLabel}: {item.risk_score}/10</span>
                     </div>
 
                     <div className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">SOURCE</span>
-                            <span className="text-white text-xs font-bold text-right ml-4">{item.source || 'UNKNOWN'}</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ИСТОЧНИК", "SOURCE")}</span>
+                            <span className="text-white text-xs font-bold text-right ml-4">{item.source || tr('НЕИЗВЕСТНО', 'UNKNOWN')}</span>
                         </div>
                         <div className="flex flex-col gap-2 border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">HEADLINE</span>
+                            <span className="text-gray-500 text-[10px]">{tr("ЗАГОЛОВОК", "HEADLINE")}</span>
                             <span className="text-red-400 text-xs font-bold leading-tight">{item.title}</span>
                         </div>
                         {item.machine_assessment && (
                             <div className="mt-2 p-2 bg-black/60 border border-cyan-800/50 rounded-sm text-[9px] text-cyan-400 font-mono leading-tight relative overflow-hidden shadow-[inset_0_0_10px_rgba(0,255,255,0.05)]">
                                 <div className="absolute top-0 left-0 w-[2px] h-full bg-cyan-500 animate-pulse"></div>
-                                <span className="font-bold text-white">&gt;_ SYS.ANALYSIS: </span>
+                                <span className="font-bold text-white">&gt;_ {tr("АНАЛИЗ СИСТЕМЫ:", "SYS.ANALYSIS:")} </span>
                                 <span className="text-cyan-300 opacity-90">{item.machine_assessment}</span>
                             </div>
                         )}
                         {item.link && (
                             <div className="flex justify-between items-center pb-2 mt-2">
-                                <span className="text-gray-500 text-[10px]">REFERENCE</span>
+                                <span className="text-gray-500 text-[10px]">{tr("ССЫЛКА", "REFERENCE")}</span>
                                 <a href={item.link} target="_blank" rel="noreferrer" className="text-red-400 hover:text-red-300 text-xs font-bold underline">
-                                    View Source Article
+                                    {tr("Открыть статью", "View Source Article")}
                                 </a>
                             </div>
                         )}
@@ -779,23 +802,23 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 >
                     <div className="p-3 border-b border-cyan-500/30 bg-cyan-950/40 flex justify-between items-center">
                         <h2 className="text-xs tracking-widest font-bold text-cyan-400 flex items-center gap-2">
-                            AERONAUTICAL HUB
+                            {tr("АВИАЦИОННЫЙ УЗЕЛ", "AERONAUTICAL HUB")}
                         </h2>
                         <span className="text-[10px] text-gray-500 font-mono">IATA: {apt.iata}</span>
                     </div>
 
                     <div className="p-4 flex flex-col gap-3">
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">FACILITY NAME</span>
+                            <span className="text-gray-500 text-[10px]">{tr("НАЗВАНИЕ ОБЪЕКТА", "FACILITY NAME")}</span>
                             <span className="text-white text-[10px] font-bold text-right ml-4 break-words">{apt.name}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">COORDINATES</span>
+                            <span className="text-gray-500 text-[10px]">{tr("КООРДИНАТЫ", "COORDINATES")}</span>
                             <span className="text-white text-xs font-bold">{apt.lat.toFixed(4)}, {apt.lng.toFixed(4)}</span>
                         </div>
                         <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                            <span className="text-gray-500 text-[10px]">STATUS</span>
-                            <span className="text-green-400 animate-pulse text-xs font-bold">OPERATIONAL</span>
+                            <span className="text-gray-500 text-[10px]">{tr("СТАТУС", "STATUS")}</span>
+                            <span className="text-green-400 animate-pulse text-xs font-bold">{tr("РАБОТАЕТ", "OPERATIONAL")}</span>
                         </div>
                     </div>
                 </motion.div>
@@ -814,8 +837,8 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                 <div className="p-3 border-b border-cyan-500/30 bg-cyan-950/40 flex justify-between items-center">
                     <h2 className="text-xs tracking-widest font-bold text-cyan-400 flex items-center gap-2">
                         <AlertTriangle size={14} className="text-red-400" /> {selectedEntity.extra?.last_updated
-                            ? new Date(selectedEntity.extra.last_updated + 'Z').toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short' }).toUpperCase() + ' — OPTIC INTERCEPT'
-                            : 'OPTIC INTERCEPT'}
+                            ? new Date(selectedEntity.extra.last_updated + 'Z').toLocaleString(uiLocale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short' }).toUpperCase() + ` — ${tr("ОПТИЧЕСКИЙ ПЕРЕХВАТ", "OPTIC INTERCEPT")}`
+                            : tr('ОПТИЧЕСКИЙ ПЕРЕХВАТ', 'OPTIC INTERCEPT')}
                     </h2>
                     <span className="text-[10px] text-gray-500 font-mono">ID: {selectedEntity.id}</span>
                 </div>
@@ -885,10 +908,10 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                     </div>
                 </div>
                 <div className="p-3 bg-black/40 text-[9px] text-cyan-500/70 font-mono tracking-widest flex justify-between items-center">
-                    <span>{selectedEntity.name?.toUpperCase() || 'UNKNOWN MOUNT'}</span>
+                    <span>{selectedEntity.name?.toUpperCase() || tr('НЕИЗВЕСТНАЯ ТОЧКА', 'UNKNOWN MOUNT')}</span>
                     <span className="text-red-500 text-right">
                         {selectedEntity.extra?.last_updated
-                            ? new Date(selectedEntity.extra.last_updated + 'Z').toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short' })
+                            ? new Date(selectedEntity.extra.last_updated + 'Z').toLocaleString(uiLocale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZoneName: 'short' })
                             : ''}
                     </span>
                 </div>
@@ -909,7 +932,7 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
             >
                 <div className="flex justify-between items-center relative z-10">
                     <h2 className="text-xs tracking-widest font-bold text-cyan-400 flex items-center gap-2">
-                        <AlertTriangle size={14} /> GLOBAL THREAT INTERCEPT
+                        <AlertTriangle size={14} /> {tr("ГЛОБАЛЬНЫЙ ПЕРЕХВАТ УГРОЗ", "GLOBAL THREAT INTERCEPT")}
                     </h2>
                     <button className="text-cyan-500 hover:text-white transition-colors">
                         {isMinimized ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -924,8 +947,8 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                             exit={{ height: 0, opacity: 0 }}
                             className="text-[9px] text-cyan-500/80 mt-1 flex items-center justify-between font-bold relative z-10"
                         >
-                            <span className="px-1 border border-cyan-500/30">SYS.STATUS: MONITORING</span>
-                            <span className="flex items-center gap-1"><Clock size={10} /> {data?.last_updated ? formatTime(data.last_updated) : "SCANNING"}</span>
+                            <span className="px-1 border border-cyan-500/30">{tr("СИСТ.СТАТУС: МОНИТОРИНГ", "SYS.STATUS: MONITORING")}</span>
+                            <span className="flex items-center gap-1"><Clock size={10} /> {data?.last_updated ? formatTime(data.last_updated) : tr("СКАНИРОВАНИЕ", "SCANNING")}</span>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -983,19 +1006,19 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                                     {item.machine_assessment && (
                                         <div className="mt-1 p-1.5 bg-black/60 border border-cyan-800/50 rounded-sm text-[8.5px] text-cyan-400 font-mono leading-tight relative overflow-hidden shadow-[inset_0_0_10px_rgba(0,255,255,0.05)]">
                                             <div className="absolute top-0 left-0 w-[2px] h-full bg-cyan-500 animate-pulse"></div>
-                                            <span className="font-bold text-white">&gt;_ SYS.ANALYSIS: </span>
+                                            <span className="font-bold text-white">&gt;_ {tr("АНАЛИЗ СИСТЕМЫ:", "SYS.ANALYSIS:")} </span>
                                             <span className="text-cyan-300 opacity-90">{item.machine_assessment}</span>
                                         </div>
                                     )}
 
                                     <div className="flex justify-between items-end mt-1 relative z-10">
                                         <span className={`text-[8px] font-bold px-1 rounded-sm border ${badgeClass}`}>
-                                            LVL: {item.risk_score}/10
+                                            {levelLabel}: {item.risk_score}/10
                                         </span>
                                         <div className="flex items-center gap-2">
                                             {item.cluster_count > 1 && (
                                                 <button onClick={() => toggleExpand(idx)} className="text-[8px] font-bold text-cyan-500 bg-cyan-950/50 hover:text-white hover:bg-cyan-900 border border-cyan-500/30 px-1.5 py-0.5 rounded-sm transition-colors cursor-pointer">
-                                                    {isExpanded ? '[- COLLAPSE]' : `[+${item.cluster_count - 1} SOURCES]`}
+                                                    {isExpanded ? tr('[- СКРЫТЬ]', '[- COLLAPSE]') : `[+${item.cluster_count - 1} ${tr('ИСТОЧНИКОВ', 'SOURCES')}]`}
                                                 </button>
                                             )}
                                             {item.coords && (
@@ -1023,7 +1046,7 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                                                                     subItem.risk_score >= 7 ? 'text-orange-400' :
                                                                         subItem.risk_score >= 4 ? 'text-yellow-500' :
                                                                             'text-green-400'
-                                                            }>LVL: {subItem.risk_score}/10</span>
+                                                            }>{levelLabel}: {subItem.risk_score}/10</span>
                                                         </div>
                                                         <a href={subItem.link} target="_blank" rel="noreferrer" className="text-[10px] text-gray-400 hover:text-white transition-colors leading-tight">
                                                             {subItem.title}
@@ -1038,7 +1061,7 @@ function NewsFeedInner({ data, selectedEntity, regionDossier, regionDossierLoadi
                         })}
                         {news.length === 0 && (
                             <div className="text-cyan-500/50 text-[10px] tracking-widest font-bold text-center mt-6 animate-pulse">
-                                INITIALIZING SECURE HANDSHAKE...
+                                {tr("ИНИЦИАЛИЗАЦИЯ ЗАЩИЩЁННОГО КАНАЛА...", "INITIALIZING SECURE HANDSHAKE...")}
                             </div>
                         )}
                     </motion.div>

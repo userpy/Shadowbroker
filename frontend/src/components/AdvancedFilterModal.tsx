@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, X, Check, GripHorizontal } from 'lucide-react';
+import type { AppLanguage } from "@/lib/threatRegulations";
 
 interface FilterField {
     key: string;
@@ -20,11 +21,14 @@ interface AdvancedFilterModalProps {
     activeFilters: Record<string, string[]>;
     onApply: (filters: Record<string, string[]>) => void;
     onClose: () => void;
+    language?: AppLanguage;
 }
 
 export default function AdvancedFilterModal({
-    title, icon, accentColor, accentColorName, fields, activeFilters, onApply, onClose
+    title, icon, accentColor, accentColorName, fields, activeFilters, onApply, onClose, language
 }: AdvancedFilterModalProps) {
+    const lang: AppLanguage = language || "ru";
+    const tr = (ru: string, en: string) => (lang === "ru" ? ru : en);
     // Local draft state — only committed on Apply
     const [draft, setDraft] = useState<Record<string, Set<string>>>(() => {
         const init: Record<string, Set<string>> = {};
@@ -138,8 +142,6 @@ export default function AdvancedFilterModal({
         });
     }, [activeField, activeTab, searchTerms]);
 
-    const accentBorder = `border-[${accentColor}]/30`;
-
     // Tailwind color map for dynamic classes
     const colorMap: Record<string, { text: string; bg: string; bgHover: string; border: string; ring: string }> = {
         cyan: { text: 'text-cyan-400', bg: 'bg-cyan-500/10', bgHover: 'hover:bg-cyan-500/15', border: 'border-cyan-500/30', ring: 'ring-cyan-500/50' },
@@ -172,7 +174,7 @@ export default function AdvancedFilterModal({
                     exit={{ opacity: 0, scale: 0.92 }}
                     transition={{ duration: 0.2 }}
                     className={`bg-[#0a0e14]/95 backdrop-blur-xl border ${c.border} rounded-xl shadow-[0_8px_60px_rgba(0,0,0,0.8)] flex flex-col font-mono overflow-hidden`}
-                    style={{ maxHeight: '70vh' }}
+                    style={{ maxHeight: '70vh', borderColor: `${accentColor}66` }}
                 >
                     {/* ── Title Bar (Draggable) ── */}
                     <div
@@ -185,7 +187,7 @@ export default function AdvancedFilterModal({
                             <span className={`text-[11px] ${c.text} tracking-[0.25em] font-semibold`}>{title}</span>
                             {totalSelected > 0 && (
                                 <span className={`text-[9px] ${c.bg} ${c.text} px-1.5 py-0.5 rounded-sm`}>
-                                    {totalSelected} SELECTED
+                                    {totalSelected} {tr("ВЫБРАНО", "SELECTED")}
                                 </span>
                             )}
                         </div>
@@ -243,7 +245,7 @@ export default function AdvancedFilterModal({
                                 onClick={() => clearField(activeTab)}
                                 className="text-[8px] text-red-400/70 hover:text-red-300 tracking-widest ml-1"
                             >
-                                CLEAR
+                                {tr("СБРОС", "CLEAR")}
                             </button>
                         </div>
                     )}
@@ -256,7 +258,7 @@ export default function AdvancedFilterModal({
                                 type="text"
                                 value={searchTerms[activeTab] || ''}
                                 onChange={(e) => setSearchTerms(prev => ({ ...prev, [activeTab]: e.target.value }))}
-                                placeholder={`Search ${activeField?.label.toLowerCase() || ''}...`}
+                                placeholder={tr(`Поиск: ${activeField?.label.toLowerCase() || ''}...`, `Search ${activeField?.label.toLowerCase() || ''}...`)}
                                 className={`w-full bg-black/50 border border-gray-700/70 rounded-lg text-[11px] text-gray-300 pl-8 pr-8 py-2 font-mono tracking-wide focus:outline-none focus:${c.border} focus:ring-1 ${c.ring} placeholder-gray-600 transition-all`}
                                 autoFocus
                             />
@@ -271,10 +273,10 @@ export default function AdvancedFilterModal({
                         </div>
                         <div className="flex justify-between mt-1.5">
                             <span className="text-[8px] text-gray-600 tracking-widest">
-                                {filteredOptions.length} AVAILABLE
+                                {filteredOptions.length} {tr("ДОСТУПНО", "AVAILABLE")}
                             </span>
                             <span className="text-[8px] text-gray-600 tracking-widest">
-                                {draft[activeTab]?.size || 0} SELECTED
+                                {draft[activeTab]?.size || 0} {tr("ВЫБРАНО", "SELECTED")}
                             </span>
                         </div>
                     </div>
@@ -283,7 +285,7 @@ export default function AdvancedFilterModal({
                     <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 styled-scrollbar" style={{ maxHeight: '35vh' }}>
                         {filteredOptions.length === 0 ? (
                             <div className="text-center py-8 text-gray-600 text-[10px] tracking-widest">
-                                NO MATCHING RESULTS
+                                {tr("НЕТ СОВПАДЕНИЙ", "NO MATCHING RESULTS")}
                             </div>
                         ) : (
                             <div className="flex flex-col gap-px">
@@ -321,20 +323,20 @@ export default function AdvancedFilterModal({
                             onClick={clearAll}
                             className="text-[9px] text-red-400/70 hover:text-red-300 tracking-widest transition-colors"
                         >
-                            CLEAR ALL
+                            {tr("СБРОСИТЬ ВСЁ", "CLEAR ALL")}
                         </button>
                         <div className="flex gap-2">
                             <button
                                 onClick={onClose}
                                 className="text-[9px] text-gray-500 hover:text-gray-300 tracking-widest border border-gray-700 rounded-md px-4 py-1.5 hover:bg-gray-800/50 transition-all"
                             >
-                                CANCEL
+                                {tr("ОТМЕНА", "CANCEL")}
                             </button>
                             <button
                                 onClick={handleApply}
                                 className={`text-[9px] ${c.text} tracking-widest border ${c.border} rounded-md px-4 py-1.5 ${c.bg} ${c.bgHover} transition-all font-semibold`}
                             >
-                                APPLY{totalSelected > 0 ? ` (${totalSelected})` : ''}
+                                {tr("ПРИМЕНИТЬ", "APPLY")}{totalSelected > 0 ? ` (${totalSelected})` : ''}
                             </button>
                         </div>
                     </div>
