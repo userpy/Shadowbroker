@@ -100,7 +100,11 @@ latest_data = {
     "uavs": [],
     "frontlines": None,
     "gdelt": [],
-    "liveuamap": []
+    "liveuamap": [],
+    "kiwisdr": [],
+    "space_weather": None,
+    "radiation": [],
+    "internet_outages": []
 }
 
 # Thread lock for safe reads/writes to latest_data
@@ -758,6 +762,11 @@ def fetch_flights():
                     speed_knots = round(gs_knots, 1) if isinstance(gs_knots, (int, float)) else None
 
                     model_upper = f.get("t", "").upper()
+
+                    # Skip fixed structures (towers, oil platforms) that broadcast ADS-B
+                    if model_upper == "TWR":
+                        continue
+
                     ac_category = "heli" if model_upper in _HELI_TYPES_BACKEND else "plane"
 
                     flights.append({
@@ -1128,6 +1137,11 @@ def fetch_military_flights():
                         continue
                         
                     model = str(f.get("t", "UNKNOWN")).upper()
+
+                    # Skip fixed structures (towers, oil platforms) that broadcast ADS-B
+                    if model == "TWR":
+                        continue
+
                     mil_cat = "default"
                     if "H" in model and any(c.isdigit() for c in model):
                         mil_cat = "heli"
@@ -1249,6 +1263,119 @@ def fetch_cctv():
     except Exception as e:
         logger.error(f"Error fetching cctv from DB: {e}")
         latest_data["cctv"] = []
+
+def fetch_kiwisdr():
+    try:
+        from services.kiwisdr_fetcher import fetch_kiwisdr_nodes
+        latest_data["kiwisdr"] = fetch_kiwisdr_nodes()
+    except Exception as e:
+        logger.error(f"Error fetching KiwiSDR nodes: {e}")
+        latest_data["kiwisdr"] = []
+
+def fetch_space_weather():
+    """Fetch NOAA SWPC Kp index and recent solar events."""
+    try:
+        kp_resp = fetch_with_curl("https://services.swpc.noaa.gov/json/planetary_k_index_1m.json", timeout=10)
+        kp_value = None
+        kp_text = "QUIET"
+        if kp_resp.status_code == 200:
+            kp_data = kp_resp.json()
+            if kp_data:
+                latest_kp = kp_data[-1]
+                kp_value = float(latest_kp.get("kp_index", 0))
+                if kp_value >= 7:
+                    kp_text = f"STORM G{min(int(kp_value) - 4, 5)}"
+                elif kp_value >= 5:
+                    kp_text = f"STORM G{min(int(kp_value) - 4, 5)}"
+                elif kp_value >= 4:
+                    kp_text = "ACTIVE"
+                elif kp_value >= 3:
+                    kp_text = "UNSETTLED"
+
+        events = []
+        ev_resp = fetch_with_curl("https://services.swpc.noaa.gov/json/edited_events.json", timeout=10)
+        if ev_resp.status_code == 200:
+            all_events = ev_resp.json()
+            for ev in all_events[-10:]:
+                events.append({
+                    "type": ev.get("type", ""),
+                    "begin": ev.get("begin", ""),
+                    "end": ev.get("end", ""),
+                    "classtype": ev.get("classtype", ""),
+                })
+
+        latest_data["space_weather"] = {
+            "kp_index": kp_value,
+            "kp_text": kp_text,
+            "events": events,
+        }
+        logger.info(f"Space weather: Kp={kp_value} ({kp_text}), {len(events)} events")
+    except Exception as e:
+        logger.error(f"Error fetching space weather: {e}")
+
+def fetch_radiation():
+    """Fetch global radiation measurements from Safecast (CC0, no key)."""
+    measurements = []
+    try:
+        url = "https://api.safecast.org/en-US/measurements.json?distance=10000&latitude=0&longitude=0"
+        response = fetch_with_curl(url, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            for m in data:
+                lat = m.get("latitude")
+                lng = m.get("longitude")
+                value = m.get("value")
+                if lat is None or lng is None or value is None:
+                    continue
+                measurements.append({
+                    "lat": lat,
+                    "lng": lng,
+                    "cpm": value,
+                    "captured_at": m.get("captured_at", ""),
+                })
+            measurements = measurements[:500]
+        logger.info(f"Radiation: {len(measurements)} sensors")
+    except Exception as e:
+        logger.error(f"Error fetching radiation data: {e}")
+    latest_data["radiation"] = measurements
+
+def fetch_internet_outages():
+    """Fetch internet outage alerts from IODA (Georgia Tech)."""
+    outages = []
+    try:
+        now = int(time.time())
+        start = now - 86400
+        url = f"https://api.ioda.inetintel.cc.gatech.edu/v2/outages/alerts?from={start}&until={now}"
+        response = fetch_with_curl(url, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            alerts = data.get("data", [])
+            for alert in alerts:
+                entity = alert.get("entity", {})
+                if entity.get("type") != "country":
+                    continue
+                code = entity.get("code", "")
+                name = entity.get("name", "")
+                level = alert.get("level", "")
+                score = alert.get("condition", alert.get("score", 0))
+                if level == "normal":
+                    continue
+                outages.append({
+                    "country_code": code,
+                    "country_name": name,
+                    "level": level,
+                    "score": score if isinstance(score, (int, float)) else 0,
+                })
+            seen = {}
+            for o in outages:
+                cc = o["country_code"]
+                if cc not in seen or o["score"] > seen[cc]["score"]:
+                    seen[cc] = o
+            outages = list(seen.values())[:100]
+        logger.info(f"Internet outages: {len(outages)} countries affected")
+    except Exception as e:
+        logger.error(f"Error fetching internet outages: {e}")
+    latest_data["internet_outages"] = outages
 
 def fetch_bikeshare():
     bikes = []
@@ -1805,6 +1932,10 @@ def update_slow_data():
         fetch_cctv,
         fetch_earthquakes,
         fetch_geopolitics,
+        fetch_kiwisdr,
+        fetch_space_weather,
+        fetch_radiation,
+        fetch_internet_outages,
     ]
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(slow_funcs)) as executor:
         futures = [executor.submit(func) for func in slow_funcs]

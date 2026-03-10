@@ -68,5 +68,29 @@ TheAirTraffic Database.xlsx
 # Debug dumps & release artifacts
 backend/dump.json
 backend/debug_fast.json
+backend/nyc_sample.json
+backend/nyc_full.json
+backend/liveua_test.html
+backend/out_liveua.json
+frontend/server_logs*.txt
+frontend/cctv.db
 *.zip
 .git_backup/
+
+# Test files (may contain hardcoded keys)
+backend/test_*.py
+backend/services/test_*.py
+
+# Local analysis & dev tools
+backend/analyze_xlsx.py
+backend/xlsx_analysis.txt
+backend/services/ais_cache.json
+
+# Internal update tracking (not for repo)
+updatestuff.md
+
+# Misc dev artifacts
+clean_zip.py
+zip_repo.py
+refactor_cesium.py
+jobs.json
