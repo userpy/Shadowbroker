@@ -2,54 +2,45 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Satellite, Radio, MapPin, Image, Layers, Bug } from "lucide-react";
+import { X, Zap, Gauge, Anchor, Layers, Bug } from "lucide-react";
 
-const CURRENT_VERSION = "0.4";
+const CURRENT_VERSION = "0.7";
 const STORAGE_KEY = `shadowbroker_changelog_v${CURRENT_VERSION}`;
 
 const NEW_FEATURES = [
     {
-        icon: <Satellite size={14} className="text-cyan-400" />,
-        title: "NASA GIBS Satellite Imagery",
-        desc: "Daily MODIS Terra true-color imagery with 30-day time slider, play/pause animation, and opacity control.",
-        color: "cyan",
-    },
-    {
-        icon: <Layers size={14} className="text-green-400" />,
-        title: "High-Res Satellite (Esri)",
-        desc: "Sub-meter resolution imagery — zoom into buildings and terrain. Toggle in Data Layers or cycle to SATELLITE style.",
+        icon: <Gauge size={14} className="text-green-400" />,
+        title: "Parallelized Data Fetches",
+        desc: "Stock and oil ticker fetches now run in parallel via ThreadPoolExecutor — backend data updates ~4x faster (~2s vs ~8s serial).",
         color: "green",
     },
     {
-        icon: <Radio size={14} className="text-amber-400" />,
-        title: "KiwiSDR Radio Receivers",
-        desc: "500+ public SDR receivers plotted worldwide. Click any node to open a live radio tuner directly in the SIGINT panel.",
-        color: "amber",
-    },
-    {
-        icon: <Image size={14} className="text-blue-400" />,
-        title: "Sentinel-2 Intel Card",
-        desc: "Right-click anywhere — a floating intel card shows the latest Sentinel-2 satellite photo with capture date and cloud cover. Click to open full resolution.",
+        icon: <Anchor size={14} className="text-blue-400" />,
+        title: "AIS WebSocket Stability",
+        desc: "Exponential backoff now properly resets after 200 consecutive successes. Removed lock-contention vessel pruning — replaced with time-based logging every 60s.",
         color: "blue",
     },
     {
-        icon: <MapPin size={14} className="text-purple-400" />,
-        title: "LOCATE Bar",
-        desc: "New search bar above coordinates — enter coordinates (31.8, 34.8) or place names (Tehran, Strait of Hormuz) to fly directly there.",
-        color: "purple",
+        icon: <Zap size={14} className="text-yellow-400" />,
+        title: "Deferred Icon Loading",
+        desc: "~35 critical map icons load immediately on startup. ~50 non-critical icons (fire markers, satellites, color variants) are deferred — faster initial map render.",
+        color: "yellow",
     },
     {
         icon: <Layers size={14} className="text-cyan-400" />,
-        title: "SATELLITE Style Preset",
-        desc: "STYLE button now cycles: DEFAULT → SATELLITE. SATELLITE auto-enables high-res imagery.",
+        title: "Smarter Data Tiering",
+        desc: "Satellites removed from fast endpoint (was duplicated). Geopolitics polling reduced from 5min to 30min. Single-pass ETag serialization — clients get 304 Not Modified most of the time.",
         color: "cyan",
     },
 ];
 
 const BUG_FIXES = [
-    "Satellite imagery renders below all data icons — flights, ships, markers always visible on top",
-    "Sentinel-2 click now opens the actual high-res PNG image directly in browser",
-    "Light/dark theme fixed — UI stays dark, only the map basemap switches",
+    "News feed entrance animations capped at 15 items — no more 100+ simultaneous Framer Motion instances",
+    "FIRMS fire hotspots and internet outages use heapq.nlargest() instead of full sort — faster processing of 60K+ records",
+    "Ship counts in left panel memoized with single-pass loop instead of 3 separate filter calls",
+    "Color map objects extracted to module-level constants — no allocation on every 2s tick",
+    "GDELT headline extraction improved — skips gibberish URL slugs and hex IDs",
+    "Multi-arch Docker images now available (amd64 + arm64) — runs on Raspberry Pi and Apple Silicon",
 ];
 
 export function useChangelog() {

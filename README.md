@@ -13,7 +13,11 @@
 
 ## Русская версия
 
-![560645594-989008ee-c690-4cc0-aade-14c24ca82874](https://github.com/user-attachments/assets/5a879552-327f-4f66-81e9-4ae1cec9c468)
+
+
+https://github.com/user-attachments/assets/248208ec-62f7-49d1-831d-4bd0a1fa6852
+
+
 
 **ShadowBroker** — это многодоменная панель OSINT в режиме реального времени, которая собирает живые данные из десятков открытых источников и отображает их на едином тёмном интерфейсе карты для операций. Она отслеживает самолёты, корабли, спутники, землетрясения, зоны конфликтов, сети видеонаблюдения, GPS-глушение и разворачивающиеся геополитические события — всё обновляется мгновенно.
 
@@ -422,7 +426,7 @@ Built with **Next.js**, **MapLibre GL**, **FastAPI**, and **Python**, it's desig
 
 ## Interesting Use Cases
 
-* Track private jets of billionaires
+* Track everything from Air Force One to the private jets of billionaires, dictators, and corporations
 * Monitor satellites passing overhead and see high-resolution satellite imagery
 * Nose around local emergency scanners
 * Watch naval traffic worldwide
@@ -487,7 +491,7 @@ Do not append a trailing `.` to that command; Compose treats it as a service nam
 
 * **Global Incidents** — GDELT-powered conflict event aggregation (last 8 hours, ~1,000 events)
 * **Ukraine Frontline** — Live warfront GeoJSON from DeepState Map
-* **SIGINT/RISINT News Feed** — Real-time RSS aggregation from multiple intelligence-focused sources
+* **SIGINT/RISINT News Feed** — Real-time RSS aggregation from multiple intelligence-focused sources with user-customizable feeds (up to 20 sources, configurable priority weights 1-5)
 * **Region Dossier** — Right-click anywhere on the map for:
   * Country profile (population, capital, languages, currencies, area)
   * Head of state & government type (Wikidata SPARQL)
@@ -523,6 +527,13 @@ Do not append a trailing `.` to that command; Compose treats it as a service nam
   * Grid-based aggregation identifies interference zones
   * Red overlay squares with "GPS JAM XX%" severity labels
 * **Radio Intercept Panel** — Scanner-style UI for monitoring communications
+
+### 🔥 Environmental & Infrastructure Monitoring
+
+* **NASA FIRMS Fire Hotspots (24h)** — 5,000+ global thermal anomalies from NOAA-20 VIIRS satellite, updated every cycle. Flame-shaped icons color-coded by fire radiative power (FRP): yellow (low), orange, red, dark red (intense). Clustered at low zoom with fire-shaped cluster markers.
+* **Space Weather Badge** — Live NOAA geomagnetic storm indicator in the bottom status bar. Color-coded Kp index: green (quiet), yellow (active), red (storm G1–G5). Data from SWPC planetary K-index 1-minute feed.
+* **Internet Outage Monitoring** — Regional internet connectivity alerts from Georgia Tech IODA. Grey markers at affected regions with severity percentage. Uses only reliable datasources (BGP routing tables, active ping probing) — no telescope or interpolated data.
+* **Data Center Mapping** — 2,000+ global data centers plotted from a curated dataset. Clustered purple markers with server-rack icons. Click for operator, location, and automatic internet outage cross-referencing by country.
 
 ### 🌐 Additional Layers
 
@@ -564,6 +575,9 @@ Do not append a trailing `.` to that command; Compose treats it as a service nam
 │  │  ├──────────┼──────────┼──────────┼───────────┤  │  │
 │  │  │ DeepState│   RSS    │  Region  │    GPS    │  │  │
 │  │  │ Frontline│  Intel   │ Dossier  │  Jamming  │  │  │
+│  │  ├──────────┼──────────┼──────────┼───────────┤  │  │
+│  │  │  NASA    │  NOAA    │  IODA    │  KiwiSDR  │  │  │
+│  │  │  FIRMS   │  Space Wx│ Outages  │  Radios   │  │  │
 │  │  └──────────┴──────────┴──────────┴───────────┘  │  │
 │  └──────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────┘
@@ -594,6 +608,10 @@ Do not append a trailing `.` to that command; Compose treats it as a service nam
 | [MS Planetary Computer](https://planetarycomputer.microsoft.com) | Sentinel-2 L2A scenes (right-click) | On-demand | No |
 | [KiwiSDR](https://kiwisdr.com) | Public SDR receiver locations | ~30min | No |
 | [OSM Nominatim](https://nominatim.openstreetmap.org) | Place name geocoding (LOCATE bar) | On-demand | No |
+| [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov) | NOAA-20 VIIRS fire/thermal hotspots | ~120s | No |
+| [NOAA SWPC](https://services.swpc.noaa.gov) | Space weather Kp index & solar events | ~120s | No |
+| [IODA (Georgia Tech)](https://ioda.inetintel.cc.gatech.edu) | Regional internet outage alerts | ~120s | No |
+| [DC Map (GitHub)](https://github.com/Ringmast4r/Data-Center-Map---Global) | Global data center locations | Static (cached 7d) | No |
 | [CARTO Basemaps](https://carto.com) | Dark map tiles | Continuous | No |
 
 ---
@@ -613,33 +631,73 @@ cd Shadowbroker
 
 Open `http://localhost:3000` to view the dashboard.
 
-> **Deploying publicly or on a LAN?** The frontend **auto-detects** the
-> backend — it uses your browser's hostname with port `8000`
-> (e.g. if you visit `http://192.168.1.50:3000`, API calls go to
-> `http://192.168.1.50:8000`). **No configuration needed** for most setups.
+> **Deploying publicly or on a LAN?** No configuration needed for most setups.
+> The frontend proxies all API calls through the Next.js server to `BACKEND_URL`,
+> which defaults to `http://backend:8000` (Docker internal networking).
+> Port 8000 does not need to be exposed externally.
 >
-> If your backend runs on a **different port or host** (reverse proxy,
-> custom Docker port mapping, separate server), set `NEXT_PUBLIC_API_URL`:
+> If your backend runs on a **different host or port**, set `BACKEND_URL` at runtime — no rebuild required:
 >
 > ```bash
 > # Linux / macOS
-> NEXT_PUBLIC_API_URL=http://myserver.com:9096 docker-compose up -d --build
+> BACKEND_URL=http://myserver.com:9096 docker-compose up -d
 >
 > # Podman (via compose.sh wrapper)
-> NEXT_PUBLIC_API_URL=http://192.168.1.50:9096 ./compose.sh up -d --build
+> BACKEND_URL=http://192.168.1.50:9096 ./compose.sh up -d
 >
 > # Windows (PowerShell)
-> $env:NEXT_PUBLIC_API_URL="http://myserver.com:9096"; docker-compose up -d --build
+> $env:BACKEND_URL="http://myserver.com:9096"; docker-compose up -d
 >
 > # Or add to a .env file next to docker-compose.yml:
-> # NEXT_PUBLIC_API_URL=http://myserver.com:9096
+> # BACKEND_URL=http://myserver.com:9096
 > ```
->
-> This is a **build-time** variable (Next.js limitation) — it gets baked into
-> the frontend during `npm run build`. Changing it requires a rebuild.
 
 If you prefer to call the container engine directly, Podman users can run `podman compose up -d`, or force the wrapper to use Podman with `./compose.sh --engine podman up -d`.
 Depending on your local Podman configuration, `podman compose` may still delegate to an external compose provider while talking to the Podman socket.
+
+---
+
+### 🐋 Standalone Deploy (Portainer, Uncloud, NAS, etc.)
+
+No need to clone the repo. Use the pre-built images published to the GitHub Container Registry.
+
+Create a `docker-compose.yml` with the following content and deploy it directly — paste it into Portainer's stack editor, `uncloud deploy`, or any Docker host:
+
+```yaml
+services:
+  backend:
+    image: ghcr.io/bigbodycobain/shadowbroker-backend:latest
+    container_name: shadowbroker-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - AIS_API_KEY=your_aisstream_key          # Required — get one free at aisstream.io
+      - OPENSKY_CLIENT_ID=                       # Optional — higher flight data rate limits
+      - OPENSKY_CLIENT_SECRET=                   # Optional — paired with Client ID above
+      - LTA_ACCOUNT_KEY=                         # Optional — Singapore CCTV cameras
+      - CORS_ORIGINS=                            # Optional — comma-separated allowed origins
+    volumes:
+      - backend_data:/app/data
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/bigbodycobain/shadowbroker-frontend:latest
+    container_name: shadowbroker-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:8000   # Docker internal networking — no rebuild needed
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend_data:
+```
+
+> **How it works:** The frontend container proxies all `/api/*` requests through the Next.js server to `BACKEND_URL` using Docker's internal networking. The browser only ever talks to port 3000 — port 8000 does not need to be exposed externally.
+>
+> `BACKEND_URL` is a plain runtime environment variable (not a build-time `NEXT_PUBLIC_*`), so you can change it in Portainer, Uncloud, or any compose editor without rebuilding the image. Set it to the address where your backend is reachable from inside the Docker network (e.g. `http://backend:8000`, `http://192.168.1.50:8000`).
 
 ---
 
@@ -728,6 +786,9 @@ All layers are independently toggleable from the left panel:
 | MODIS Terra (Daily) | ❌ OFF | NASA GIBS daily satellite imagery |
 | High-Res Satellite | ❌ OFF | Esri sub-meter satellite imagery |
 | KiwiSDR Receivers | ❌ OFF | Public SDR radio receivers |
+| Fire Hotspots (24h) | ❌ OFF | NASA FIRMS VIIRS thermal anomalies |
+| Internet Outages | ❌ OFF | IODA regional connectivity alerts |
+| Data Centers | ❌ OFF | Global data center locations (2,000+) |
 | Day / Night Cycle | ✅ ON | Solar terminator overlay |
 
 ---
@@ -739,8 +800,9 @@ The platform is optimized for handling massive real-time datasets:
 * **Gzip Compression** — API payloads compressed ~92% (11.6 MB → 915 KB)
 * **ETag Caching** — `304 Not Modified` responses skip redundant JSON parsing
 * **Viewport Culling** — Only features within the visible map bounds (+20% buffer) are rendered
-* **Clustered Rendering** — Ships, CCTV, and earthquakes use MapLibre clustering to reduce feature count
-* **Debounced Viewport Updates** — 300ms debounce prevents GeoJSON rebuild thrash during pan/zoom
+* **Imperative Map Updates** — High-volume layers (flights, satellites, fires) bypass React reconciliation via direct `setData()` calls
+* **Clustered Rendering** — Ships, CCTV, earthquakes, and data centers use MapLibre clustering to reduce feature count
+* **Debounced Viewport Updates** — 300ms debounce prevents GeoJSON rebuild thrash during pan/zoom; 2s debounce on dense layers (satellites, fires)
 * **Position Interpolation** — Smooth 10s tick animation between data refreshes
 * **React.memo** — Heavy components wrapped to prevent unnecessary re-renders
 * **Coordinate Precision** — Lat/lng rounded to 5 decimals (~1m) to reduce JSON size
@@ -755,6 +817,8 @@ live-risk-dashboard/
 │   ├── main.py                     # FastAPI app, middleware, API routes
 │   ├── carrier_cache.json          # Persisted carrier OSINT positions
 │   ├── cctv.db                     # SQLite CCTV camera database
+│   ├── config/
+│   │   └── news_feeds.json         # User-customizable RSS feed list (persists across restarts)
 │   └── services/
 │       ├── data_fetcher.py         # Core scheduler — fetches all data sources
 │       ├── ais_stream.py           # AIS WebSocket client (25K+ vessels)
@@ -766,7 +830,8 @@ live-risk-dashboard/
 │       ├── kiwisdr_fetcher.py      # KiwiSDR receiver scraper
 │       ├── sentinel_search.py      # Sentinel-2 STAC imagery search
 │       ├── network_utils.py        # HTTP client with curl fallback
-│       └── api_settings.py         # API key management
+│       ├── api_settings.py         # API key management
+│       └── news_feed_config.py     # RSS feed config manager (add/remove/weight feeds)
 │
 ├── frontend/
 │   ├── src/
@@ -784,7 +849,7 @@ live-risk-dashboard/
 │   │       ├── RadioInterceptPanel.tsx # Scanner-style radio panel
 │   │       ├── FindLocateBar.tsx   # Search/locate bar
 │   │       ├── ChangelogModal.tsx  # Version changelog popup
-│   │       ├── SettingsPanel.tsx   # App settings
+│   │       ├── SettingsPanel.tsx   # App settings (API Keys + News Feed manager)
 │   │       ├── ScaleBar.tsx        # Map scale indicator
 │   │       ├── WikiImage.tsx       # Wikipedia image fetcher
 │   │       └── ErrorBoundary.tsx   # Crash recovery wrapper
@@ -807,16 +872,13 @@ OPENSKY_CLIENT_SECRET=your_opensky_secret     # OAuth2 — paired with Client ID
 LTA_ACCOUNT_KEY=your_lta_key                  # Singapore CCTV cameras
 ```
 
-### Frontend (optional)
+### Frontend
 
 | Variable | Where to set | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | `.env` next to `docker-compose.yml`, or shell env | Override backend URL when deploying publicly or behind a reverse proxy. Leave unset for auto-detection. |
+| `BACKEND_URL` | `environment` in `docker-compose.yml`, or shell env | URL the Next.js server uses to proxy API calls to the backend. Defaults to `http://backend:8000`. **Runtime variable — no rebuild needed.** |
 
-**How auto-detection works:** When `NEXT_PUBLIC_API_URL` is not set, the frontend
-reads `window.location.hostname` in the browser and calls `{protocol}//{hostname}:8000`.
-This means the dashboard works on `localhost`, LAN IPs, and public domains without
-any configuration — as long as the backend is reachable on port 8000 of the same host.
+**How it works:** The frontend proxies all `/api/*` requests through the Next.js server to `BACKEND_URL` using Docker's internal networking. Browsers only talk to port 3000; port 8000 never needs to be exposed externally. For local dev without Docker, `BACKEND_URL` defaults to `http://localhost:8000`.
 
 ---
 
