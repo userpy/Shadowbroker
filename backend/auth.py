@@ -521,33 +521,32 @@ _KNOWN_COMPROMISED_PEER_PUSH_SECRET_SHA256 = (
 def _validate_admin_startup() -> None:
     admin_key = _current_admin_key()
 
-    if not admin_key or len(admin_key) < 32:
-        import secrets
+    if not admin_key:
+        logger.warning(
+            "ADMIN_KEY is not set. Local-operator/admin endpoints will reject "
+            "remote callers until ADMIN_KEY is configured."
+        )
+        return
 
-        reason = "not set" if not admin_key else f"too short ({len(admin_key)} chars, minimum 32)"
-        new_key = secrets.token_hex(32)  # 64-char hex string
+    if len(admin_key) < 32:
+        reason = f"too short ({len(admin_key)} chars, minimum 32)"
         try:
-            from routers.ai_intel import _write_env_value
-
-            _write_env_value("ADMIN_KEY", new_key)
-            os.environ["ADMIN_KEY"] = new_key
-            logger.info(
-                "ADMIN_KEY was %s — auto-generated a strong 64-character key and "
-                "saved it to .env. Admin/mesh endpoints are now secured.",
-                reason,
-            )
-            # Clear settings cache so the rest of startup picks up the new key
-            try:
-                get_settings.cache_clear()
-            except Exception:
-                pass
-        except Exception as exc:
+            debug_mode = bool(getattr(get_settings(), "MESH_DEBUG_MODE", False))
+        except Exception:
+            debug_mode = False
+        if debug_mode:
             logger.warning(
-                "ADMIN_KEY is %s and could not auto-generate: %s. "
-                "Admin/mesh endpoints may be unavailable.",
+                "ADMIN_KEY is %s. Debug mode is enabled, so startup will continue, "
+                "but production deployments must use a 32+ character key.",
                 reason,
-                exc,
             )
+            return
+        logger.error(
+            "ADMIN_KEY is %s. Refusing to start because auto-generating a backend-only "
+            "replacement would desynchronize the frontend and backend containers.",
+            reason,
+        )
+        raise SystemExit(1)
 
 
 def _validate_insecure_admin_startup() -> None:
