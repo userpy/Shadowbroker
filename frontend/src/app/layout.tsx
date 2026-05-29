@@ -1,22 +1,19 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/lib/ThemeContext";
-import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from 'next';
+import DesktopBridgeBootstrap from '@/components/DesktopBridgeBootstrap';
+import { ThemeProvider } from '@/lib/ThemeContext';
+import { I18nProvider } from '@/i18n';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "WORLDVIEW // ORBITAL TRACKING",
-  description: "Advanced Geopolitical Risk Dashboard",
+  title: 'WORLDVIEW // ORBITAL TRACKING',
+  description: 'Advanced Geopolitical Risk Dashboard',
 };
+
+// The dashboard is a live local runtime, not a static landing page. If Next
+// prerenders and caches the initial shell, Docker users can get stuck on the
+// "prioritizing map feeds" markup before client polling ever hydrates.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default function RootLayout({
   children,
@@ -26,14 +23,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js" async></script>
-        <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--bg-primary)]`}
-        suppressHydrationWarning
-      >
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="antialiased bg-[var(--bg-primary)]" suppressHydrationWarning>
+        <I18nProvider>
+          <ThemeProvider>
+            <DesktopBridgeBootstrap />
+            {children}
+          </ThemeProvider>
+        </I18nProvider>
       </body>
     </html>
   );
