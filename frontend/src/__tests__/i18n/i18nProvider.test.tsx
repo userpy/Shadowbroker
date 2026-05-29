@@ -29,9 +29,10 @@ describe('I18nProvider', () => {
     localStorage.clear();
   });
 
-  it('exposes a non-empty LOCALES registry with en and zh-CN', () => {
+  it('exposes a non-empty LOCALES registry with en, ru and zh-CN', () => {
     const codes = LOCALES.map((l) => l.code);
     expect(codes).toContain('en');
+    expect(codes).toContain('ru');
     expect(codes).toContain('zh-CN');
     // Native labels — used by the language picker. These must be set
     // so the picker shows the native language name regardless of
@@ -61,6 +62,16 @@ describe('I18nProvider', () => {
     // "zh-TW" should match the zh prefix and resolve to our zh-CN bundle
     // (we ship only one Chinese variant for now).
     expect(screen.getByTestId('locale').textContent).toBe('zh-CN');
+  });
+
+  it('auto-detects ru when browser language starts with "ru"', () => {
+    Object.defineProperty(navigator, 'language', { value: 'ru-RU', configurable: true });
+    render(
+      <I18nProvider>
+        <Probe keyToRender="settings.title" />
+      </I18nProvider>,
+    );
+    expect(screen.getByTestId('locale').textContent).toBe('ru');
   });
 
   it('honors a previously saved localStorage choice over auto-detect', () => {
