@@ -14,6 +14,7 @@ import {
   refreshHourlyIndex,
 } from '@/hooks/useTimeMachine';
 import type { NewsArticle } from '@/types/dashboard';
+import { useTranslation } from '@/i18n';
 
 /**
  * TimelineScrubber — 24-hour activity timeline with Time Machine playback.
@@ -44,6 +45,10 @@ interface HourBin {
 }
 
 export default function TimelineScrubber() {
+  const { locale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = useCallback((ru: string, en: string) => (isRu ? ru : en), [isRu]);
+
   const news = useDataKey('news') as NewsArticle[] | undefined;
   const tm = useTimeMachine();
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
@@ -268,13 +273,13 @@ export default function TimelineScrubber() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
             </span>
             <span className="text-xs font-mono tracking-[0.3em] text-amber-500 uppercase">
-              SNAPSHOT · {snapshotLabel}
+              {tr('СНИМОК', 'SNAPSHOT')} · {snapshotLabel}
             </span>
           </div>
         ) : (
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono tracking-[0.3em] text-cyan-600 uppercase">
-              24H EVENT TIMELINE
+              {tr('ЛЕНТА СОБЫТИЙ 24Ч', '24H EVENT TIMELINE')}
             </span>
             <button
               type="button"
@@ -284,7 +289,7 @@ export default function TimelineScrubber() {
               }`}
               title={tmTooltipDismissed ? undefined : (tmEnabled ? 'Click to disable snapshots (~68 MB/day)' : 'Click to enable snapshots (~68 MB/day)')}
             >
-              {tmEnabled ? 'SNAPSHOTS ON' : 'SNAPSHOTS OFF'}
+              {tmEnabled ? tr('СНИМКИ ВКЛ', 'SNAPSHOTS ON') : tr('СНИМКИ ВЫКЛ', 'SNAPSHOTS OFF')}
             </button>
           </div>
         )}
@@ -295,9 +300,9 @@ export default function TimelineScrubber() {
             className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[rgba(5,5,5,0.95)] border border-[var(--border-primary)] rounded-sm px-2 py-0.5 text-[11px] font-mono text-cyan-400 tracking-wider whitespace-nowrap"
             style={{ boxShadow: '0 0 8px rgba(6,182,212,0.1)' }}
           >
-            {bins[hoverIdx].label} · {bins[hoverIdx].count} events
-            {bins[hoverIdx].maxRisk > 0 && ` · MAX LVL ${bins[hoverIdx].maxRisk}`}
-            {tmEnabled && bins[hoverIdx].hasSnapshot && ' · ◆ SNAPSHOT'}
+            {bins[hoverIdx].label} · {bins[hoverIdx].count} {tr('событий', 'events')}
+            {bins[hoverIdx].maxRisk > 0 && ` · ${tr('МАКС УР', 'MAX LVL')} ${bins[hoverIdx].maxRisk}`}
+            {tmEnabled && bins[hoverIdx].hasSnapshot && ` · ◆ ${tr('СНИМОК', 'SNAPSHOT')}`}
           </div>
         )}
 
@@ -317,7 +322,7 @@ export default function TimelineScrubber() {
 
           {/* Now marker label */}
           <span className="text-[11px] font-mono tracking-[0.2em] text-cyan-600 uppercase">
-            NOW
+            {tr('СЕЙЧАС', 'NOW')}
           </span>
         </div>
 

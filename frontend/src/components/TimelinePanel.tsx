@@ -24,6 +24,7 @@ import {
 import { useDataKey } from '@/hooks/useDataStore';
 import { API_BASE } from '@/lib/api';
 import { controlPlaneFetch } from '@/lib/controlPlane';
+import { useTranslation } from '@/i18n';
 import {
   enterSnapshotMode,
   exitSnapshotMode,
@@ -75,6 +76,10 @@ function pct(value: number, min: number, max: number): number {
 }
 
 export default function TimelinePanel() {
+  const { locale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = useCallback((ru: string, en: string) => (isRu ? ru : en), [isRu]);
+
   const tm = useTimeMachine();
   const [isMinimized, setIsMinimized] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
@@ -234,7 +239,7 @@ export default function TimelinePanel() {
               isSnapshot ? 'text-amber-400' : 'text-cyan-400'
             }`}
           >
-            TIME MACHINE
+            {tr('МАШИНА ВРЕМЕНИ', 'TIME MACHINE')}
           </span>
           <span
             className={`text-[10px] font-mono tracking-wider px-1.5 py-0.5 border ${
@@ -243,7 +248,7 @@ export default function TimelinePanel() {
                 : 'text-emerald-300 border-emerald-600/40 bg-emerald-950/20'
             }`}
           >
-            {isSnapshot ? 'SNAPSHOT' : 'LIVE'}
+            {isSnapshot ? tr('СНИМОК', 'SNAPSHOT') : tr('ЭФИР', 'LIVE')}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -270,7 +275,7 @@ export default function TimelinePanel() {
                 className="flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-[12px] font-mono tracking-wider font-bold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/50 rounded-sm transition-colors"
               >
                 <RotateCcw size={13} />
-                LIVE
+                {tr('ЭФИР', 'LIVE')}
               </button>
             </div>
           )}
@@ -279,7 +284,7 @@ export default function TimelinePanel() {
             <div className="flex items-center gap-2">
               <Radio size={12} className={tmEnabled ? 'text-emerald-400' : 'text-red-500/60'} />
               <span className={`text-[11px] font-mono tracking-wider ${tmEnabled ? 'text-emerald-400' : 'text-red-400/60'}`}>
-                {tmEnabled ? 'LIVE CAPTURE ON' : 'SNAPSHOTS OFF'}
+                {tmEnabled ? tr('ЗАПИСЬ В РЕАЛЬНОМ ВРЕМЕНИ', 'LIVE CAPTURE ON') : tr('СНИМКИ ВЫКЛ', 'SNAPSHOTS OFF')}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -291,7 +296,7 @@ export default function TimelinePanel() {
                 title="Capture current map state"
               >
                 <Camera size={10} />
-                {snapshotBusy ? 'SAVING...' : 'SNAP'}
+                {snapshotBusy ? tr('СОХРАНЕНИЕ...', 'SAVING...') : tr('СНИМОК', 'SNAP')}
               </button>
               <button
                 type="button"
@@ -303,7 +308,7 @@ export default function TimelinePanel() {
                 }`}
               >
                 <Settings2 size={10} />
-                CONFIGURE
+                {tr('НАСТРОЙКА', 'CONFIGURE')}
                 {configOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
               </button>
             </div>
@@ -312,7 +317,7 @@ export default function TimelinePanel() {
           {configOpen && (
             <div className="border border-cyan-900/30 bg-[rgba(5,5,10,0.95)] p-3 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-mono tracking-wider text-[var(--text-secondary)]">SNAPSHOTS</span>
+                <span className="text-[11px] font-mono tracking-wider text-[var(--text-secondary)]">{tr('СНИМКИ', 'SNAPSHOTS')}</span>
                 <button
                   type="button"
                   onClick={toggleTm}
@@ -508,14 +513,14 @@ export default function TimelinePanel() {
           ) : (
             <div className="w-full border border-cyan-900/30 rounded-sm py-4 px-3 bg-cyan-950/10 text-center">
               <div className="text-[12px] font-mono text-[var(--text-muted)] tracking-wider leading-relaxed mb-3">
-                Enable snapshots to record map state and play it back later.
+                {tr('Включите снимки, чтобы записывать состояние карты и воспроизводить его позже.', 'Enable snapshots to record map state and play it back later.')}
               </div>
               <button
                 type="button"
                 onClick={toggleTm}
                 className="px-5 py-2 text-[12px] font-mono tracking-wider font-bold text-cyan-400 hover:text-cyan-300 border border-cyan-700/50 hover:border-cyan-500/60 bg-cyan-950/30 hover:bg-cyan-950/50 rounded-sm transition-colors"
               >
-                ENABLE SNAPSHOTS
+                {tr('ВКЛЮЧИТЬ СНИМКИ', 'ENABLE SNAPSHOTS')}
               </button>
             </div>
           )}

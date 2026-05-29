@@ -185,6 +185,104 @@ const CATEGORY_COLORS: Record<string, string> = {
   Reconnaissance: 'text-green-400 border-green-500/30 bg-green-950/20',
 };
 
+const CATEGORY_LABELS_RU: Record<string, string> = {
+  Aviation: 'Авиация',
+  Maritime: 'Морские',
+  Geophysical: 'Геофизика',
+  Space: 'Космос',
+  Intelligence: 'Разведка',
+  Geolocation: 'Геолокация',
+  Weather: 'Погода',
+  Markets: 'Рынки',
+  Financial: 'Финансы',
+  SIGINT: 'SIGINT',
+  Reconnaissance: 'Рекогносцировка',
+  Imagery: 'Спутники',
+};
+
+const API_COPY_RU: Record<string, { name?: string; description?: string }> = {
+  opensky_client_id: {
+    name: 'OpenSky Network - Client ID',
+    description:
+      'OAuth2 Client ID для OpenSky Network API. Даёт глобальные векторы полётов, лимит 400 запросов/день.',
+  },
+  opensky_client_secret: {
+    name: 'OpenSky Network - Client Secret',
+    description:
+      'OAuth2 Client Secret, связанный с Client ID выше. Используется для обновления токена.',
+  },
+  ais_api_key: {
+    name: 'AIS Stream',
+    description:
+      'WebSocket API-ключ для глобального трекинга судов AIS (Automatic Identification System) в реальном времени.',
+  },
+  adsb_lol: {
+    name: 'ADS-B Exchange (adsb.lol)',
+    description:
+      'Общественный API трекинга полётов ADS-B. Ключ не нужен, публичная точка доступа.',
+  },
+  usgs_earthquakes: {
+    name: 'USGS Earthquake Hazards',
+    description:
+      'Поток данных о землетрясениях в реальном времени от Геологической службы США. Ключ не нужен.',
+  },
+  celestrak: {
+    name: 'CelesTrak (NORAD TLE)',
+    description:
+      'Орбитальные элементы спутников от CelesTrak. TLE-наборы для 2000+ активных спутников. Ключ не нужен.',
+  },
+  gdelt: {
+    name: 'GDELT Project',
+    description:
+      'Global Database of Events, Language, and Tone. Мониторинг мировых новостей по геополитическим событиям. Ключ не нужен.',
+  },
+  nominatim: {
+    name: 'Nominatim (OpenStreetMap)',
+    description:
+      'Сервис обратного геокодинга: превращает lat/lng в читаемые названия мест. Ключ не нужен.',
+  },
+  rainviewer: {
+    name: 'RainViewer',
+    description:
+      'Радарный погодный оверлей. Даёт глобальные данные осадков в формате map tiles. Ключ не нужен.',
+  },
+  rss_feeds: {
+    name: 'RSS News Feeds',
+    description:
+      'Агрегация NPR, BBC, Al Jazeera, NYT, Reuters и AP для глобальной новостной сводки. Ключ не нужен.',
+  },
+  yfinance: {
+    name: 'Yahoo Finance (yfinance)',
+    description:
+      'Котировки оборонного сектора и сырьевые цены через библиотеку yfinance. Ключ не нужен.',
+  },
+  openmhz: {
+    name: 'OpenMHz',
+    description:
+      'Публичные радиосканеры для SIGINT-перехвата. Потоки полиции/пожарных/EMS. Ключ не нужен.',
+  },
+  shodan_api_key: {
+    name: 'Shodan - Operator API Key',
+    description:
+      'Платный API-ключ Shodan для локального operator-поиска и временных оверлеев. Результаты помечаются как Shodan и не смешиваются с core-фидами ShadowBroker.',
+  },
+  finnhub_api_key: {
+    name: 'Finnhub - API Key',
+    description:
+      'Бесплатный API рыночных данных: котировки оборонных акций, disclosures по сделкам конгресса и инсайдерские транзакции. Бесплатный лимит 60 вызовов/мин.',
+  },
+  sentinel_client_id: {
+    name: 'Sentinel Hub / Copernicus - Client ID',
+    description:
+      'OAuth2 Client ID для Copernicus Data Space Ecosystem (CDSE). Нужен для оверлея Sentinel-2 и карточки Sentinel-2 Intel.',
+  },
+  sentinel_client_secret: {
+    name: 'Sentinel Hub / Copernicus - Client Secret',
+    description:
+      'OAuth2 Client Secret к Client ID выше. Бэкенд использует его для короткоживущих токенов CDSE. Хранится в backend .env и не отправляется в браузер.',
+  },
+};
+
 function dmRootMonitorTone(state: string | undefined): string {
   switch (String(state || '').toLowerCase()) {
     case 'ok':
@@ -252,6 +350,57 @@ const SettingsPanel = React.memo(function SettingsPanel({
   // browser admin-session flow is unnecessary and unavailable in packaged mode.
   const nativeProtected = isNativeProtectedSettingsReady();
   const { t, locale, setLocale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = useCallback((ru: string, en: string) => (isRu ? ru : en), [isRu]);
+  const serviceCountLabel = useCallback(
+    (count: number) => {
+      if (!isRu) return count === 1 ? 'service' : 'services';
+      const mod100 = Math.abs(count) % 100;
+      const mod10 = mod100 % 10;
+      if (mod100 > 10 && mod100 < 20) return 'сервисов';
+      if (mod10 > 1 && mod10 < 5) return 'сервиса';
+      if (mod10 === 1) return 'сервис';
+      return 'сервисов';
+    },
+    [isRu],
+  );
+  const categoryLabel = useCallback(
+    (category: string) => (isRu ? CATEGORY_LABELS_RU[category] || category : category),
+    [isRu],
+  );
+  const localizedApiCopy = useCallback(
+    (api: ApiEntry) => {
+      if (!isRu) return { name: api.name, description: api.description };
+      const localized = API_COPY_RU[api.id];
+      return {
+        name: localized?.name || api.name,
+        description: localized?.description || api.description,
+      };
+    },
+    [isRu],
+  );
+  const adminSessionMessageLabel = useCallback(
+    (msg: string) => {
+      if (!isRu) return msg;
+      switch (msg) {
+        case 'BACKEND ADMIN KEY NOT CONFIGURED':
+          return 'ADMIN_KEY БЭКЕНДА НЕ НАСТРОЕН';
+        case 'LOCAL SESSION PRIMED':
+          return 'ЛОКАЛЬНАЯ СЕССИЯ ПОДГОТОВЛЕНА';
+        case 'ADMIN SESSION REQUIRED':
+          return 'ТРЕБУЕТСЯ СЕССИЯ АДМИНА';
+        case 'ADMIN SESSION FAILED':
+          return 'ОШИБКА СЕССИИ АДМИНА';
+        case 'ADMIN KEY INVALID OR EXPIRED':
+          return 'ADMIN_KEY НЕВЕРНЫЙ ИЛИ ПРОСРОЧЕН';
+        case 'LOCAL SESSION CLEARED':
+          return 'ЛОКАЛЬНАЯ СЕССИЯ ОЧИЩЕНА';
+        default:
+          return msg;
+      }
+    },
+    [isRu],
+  );
 
   // --- Admin Key (for protected endpoints) ---
   const [adminKey, setAdminKey] = useState('');
@@ -1137,7 +1286,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                     {t('settings.title').toUpperCase()}
                   </h2>
                   <span className="text-[13px] text-[var(--text-muted)] font-mono tracking-widest">
-                    SETTINGS &amp; DATA SOURCES
+                    {tr('НАСТРОЙКИ И ИСТОЧНИКИ ДАННЫХ', 'SETTINGS & DATA SOURCES')}
                   </span>
                 </div>
               </div>
@@ -1153,7 +1302,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                   htmlFor="sb-locale-select"
                   className="text-[11px] tracking-[0.18em] uppercase text-[var(--text-muted)] font-mono"
                 >
-                  LANG
+                  {tr('ЯЗЫК', 'LANG')}
                 </label>
                 <select
                   id="sb-locale-select"
@@ -1182,10 +1331,15 @@ const SettingsPanel = React.memo(function SettingsPanel({
               <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[var(--border-primary)]/40 bg-[var(--bg-primary)]/30">
                 <div className="flex items-center gap-2 min-w-0">
                   <Shield size={12} className="text-cyan-400" />
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-mono tracking-widest text-cyan-300">WORMHOLE FIRST-RUN</div>
+                    <div className="min-w-0">
+                    <div className="text-[13px] font-mono tracking-widest text-cyan-300">
+                      {tr('ПЕРВЫЙ ЗАПУСК WORMHOLE', 'WORMHOLE FIRST-RUN')}
+                    </div>
                     <div className="text-[12px] font-mono text-[var(--text-muted)] mt-0.5">
-                      Wormhole join below does not need operator tools. API/news tabs do.
+                      {tr(
+                        'Вход в Wormhole ниже не требует операторских инструментов. Для вкладок API/новостей они нужны.',
+                        'Wormhole join below does not need operator tools. API/news tabs do.',
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1193,7 +1347,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                   onClick={() => setShowOperatorTools(true)}
                   className="px-2 py-1 border border-cyan-500/30 text-[12px] font-mono text-cyan-300/80 tracking-widest hover:text-cyan-200 hover:border-cyan-400/40"
                 >
-                  OPERATOR TOOLS
+                  {tr('ИНСТРУМЕНТЫ ОПЕРАТОРА', 'OPERATOR TOOLS')}
                 </button>
               </div>
             ) : (
@@ -1204,7 +1358,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                     className={adminSessionReady ? 'text-green-400' : 'text-yellow-500'}
                   />
                   <span className="text-[13px] font-mono tracking-widest text-[var(--text-muted)] whitespace-nowrap">
-                    OPERATOR TOOLS
+                    {tr('ИНСТРУМЕНТЫ ОПЕРАТОРА', 'OPERATOR TOOLS')}
                   </span>
                   <input
                     type="password"
@@ -1218,10 +1372,16 @@ const SettingsPanel = React.memo(function SettingsPanel({
                     disabled={nativeProtected}
                     placeholder={
                       nativeProtected
-                        ? 'Protected via native desktop bridge'
+                        ? tr('Защищено через native desktop bridge', 'Protected via native desktop bridge')
                         : adminSessionReady
-                          ? 'Operator tools unlocked. Enter key only to reseed or recover...'
-                          : 'Enter operator key for protected settings tabs...'
+                          ? tr(
+                              'Инструменты оператора разблокированы. Введите ключ только для пересида или восстановления...',
+                              'Operator tools unlocked. Enter key only to reseed or recover...',
+                            )
+                          : tr(
+                              'Введите ключ оператора для защищённых вкладок настроек...',
+                              'Enter operator key for protected settings tabs...',
+                            )
                     }
                     className="flex-1 bg-[var(--bg-primary)]/60 border border-[var(--border-primary)] px-2 py-1 text-sm font-mono text-[var(--text-secondary)] outline-none focus:border-cyan-700 placeholder:text-[var(--text-muted)]/50"
                   />
@@ -1231,7 +1391,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                       disabled={adminSessionBusy}
                       className="px-2 py-1 border border-red-500/30 text-[12px] font-mono text-red-300/80 tracking-widest hover:text-red-200 hover:border-red-400/40 disabled:opacity-50"
                     >
-                      LOCK
+                      {tr('БЛОК', 'LOCK')}
                     </button>
                   ) : (
                     <button
@@ -1239,7 +1399,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                       disabled={adminSessionBusy || !adminKey.trim()}
                       className="px-2 py-1 border border-cyan-500/30 text-[12px] font-mono text-cyan-300/80 tracking-widest hover:text-cyan-200 hover:border-cyan-400/40 disabled:opacity-50"
                     >
-                      UNLOCK
+                      {tr('РАЗБЛОК', 'UNLOCK')}
                     </button>
                   )}
                   {activeTab === 'protocol' && (
@@ -1247,7 +1407,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                       onClick={() => setShowOperatorTools(false)}
                       className="px-2 py-1 border border-[var(--border-primary)] text-[12px] font-mono text-[var(--text-muted)] tracking-widest hover:text-cyan-300 hover:border-cyan-500/40"
                     >
-                      HIDE
+                      {tr('СКРЫТЬ', 'HIDE')}
                     </button>
                   )}
                   <span
@@ -1255,7 +1415,11 @@ const SettingsPanel = React.memo(function SettingsPanel({
                       adminSessionReady ? 'text-green-400/70' : 'text-yellow-400/70'
                     }`}
                   >
-                    {nativeProtected ? 'NATIVE' : adminSessionReady ? 'ACTIVE' : 'LOCKED'}
+                    {nativeProtected
+                      ? tr('NATIVE', 'NATIVE')
+                      : adminSessionReady
+                        ? tr('АКТИВНО', 'ACTIVE')
+                        : tr('ЗАБЛОКИРОВАНО', 'LOCKED')}
                   </span>
                 </div>
                 {adminSessionMsg && (
@@ -1265,7 +1429,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                         adminSessionReady ? 'text-green-300/80' : 'text-yellow-300/80'
                       }`}
                     >
-                      {adminSessionMsg}
+                      {adminSessionMessageLabel(adminSessionMsg)}
                     </span>
                   </div>
                 )}
@@ -1274,8 +1438,10 @@ const SettingsPanel = React.memo(function SettingsPanel({
             {adminSessionMsg === 'BACKEND ADMIN KEY NOT CONFIGURED' && activeTab !== 'protocol' && (
               <div className="mx-4 mt-3 border border-yellow-500/25 bg-yellow-950/10 px-3 py-3 text-sm font-mono text-yellow-200/90 leading-relaxed">
                 <div>
-                  This is not an old market/API key problem. The backend admin secret itself is
-                  not configured, so protected Settings tabs cannot load.
+                  {tr(
+                    'Это не старая проблема с рыночным/API-ключом. В бэкенде не настроен сам admin secret, поэтому защищённые вкладки Settings не могут загрузиться.',
+                    'This is not an old market/API key problem. The backend admin secret itself is not configured, so protected Settings tabs cannot load.',
+                  )}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
@@ -1285,19 +1451,24 @@ const SettingsPanel = React.memo(function SettingsPanel({
                     }}
                     className="px-3 py-1.5 border border-yellow-400/40 bg-yellow-950/20 text-[13px] font-mono tracking-[0.18em] text-yellow-200 hover:bg-yellow-950/30"
                   >
-                    PASTE ADMIN KEY
+                    {tr('ВСТАВИТЬ ADMIN KEY', 'PASTE ADMIN KEY')}
                   </button>
                   <button
                     onClick={() => setActiveTab('protocol')}
                     className="px-3 py-1.5 border border-cyan-500/35 bg-cyan-950/18 text-[13px] font-mono tracking-[0.18em] text-cyan-200 hover:bg-cyan-950/28"
                   >
-                    BACK TO WORMHOLE
+                    {tr('НАЗАД В WORMHOLE', 'BACK TO WORMHOLE')}
                   </button>
                 </div>
                 <div className="mt-3 text-[13px] text-yellow-100/70">
-                  Add <span className="text-cyan-300">ADMIN_KEY</span> to{' '}
-                  <span className="text-cyan-300">backend/.env</span>, restart the backend, then
-                  paste that same key above and unlock.
+                  {tr('Добавьте ', 'Add ')}
+                  <span className="text-cyan-300">ADMIN_KEY</span>
+                  {tr(' в ', ' to ')}
+                  <span className="text-cyan-300">backend/.env</span>
+                  {tr(
+                    ', перезапустите бэкенд, затем вставьте этот же ключ выше и разблокируйте.',
+                    ', restart the backend, then paste that same key above and unlock.',
+                  )}
                 </div>
               </div>
             )}
@@ -2224,7 +2395,10 @@ const SettingsPanel = React.memo(function SettingsPanel({
                     )}
                     {companionLoadFailed && (
                       <div className="mt-2 p-2 border border-amber-500/20 bg-amber-950/15 text-[11px] font-mono text-amber-300/90 leading-relaxed">
-                        Companion service unavailable. The native bridge did not respond. Try reopening Settings or restarting the app.
+                        {tr(
+                          'Сервис Companion недоступен. Native bridge не ответил. Попробуйте заново открыть Settings или перезапустить приложение.',
+                          'Companion service unavailable. The native bridge did not respond. Try reopening Settings or restarting the app.',
+                        )}
                       </div>
                     )}
                     {companionError && (
@@ -2245,41 +2419,55 @@ const SettingsPanel = React.memo(function SettingsPanel({
                   <div className="flex items-start gap-2">
                     <Shield size={12} className="text-cyan-500 mt-0.5 flex-shrink-0" />
                     <p className="text-sm text-[var(--text-secondary)] font-mono leading-relaxed">
-                      API keys are saved locally by this backend. Values are write-only: the app
-                      stores the key and shows CONFIGURED, but it never reads the secret back into
-                      the browser. Keys marked with{' '}
-                      <Key size={8} className="inline text-yellow-500" /> unlock the richest live
-                      aircraft and vessel feeds.
+                      {tr(
+                        'API-ключи сохраняются локально этим бэкендом. Значения только на запись: приложение сохраняет ключ и показывает CONFIGURED, но никогда не читает секрет обратно в браузер. Ключи с',
+                        'API keys are saved locally by this backend. Values are write-only: the app stores the key and shows CONFIGURED, but it never reads the secret back into the browser. Keys marked with',
+                      )}{' '}
+                      <Key size={8} className="inline text-yellow-500" />{' '}
+                      {tr(
+                        'открывают самые насыщенные живые авиа- и морские фиды.',
+                        'unlock the richest live aircraft and vessel feeds.',
+                      )}
                     </p>
                   </div>
                   <div className="pl-5 text-[12px] font-mono text-cyan-200/80 leading-relaxed">
-                    Configured keys stay hidden for shared dashboards. Unlock operator tools, then
-                    use ROTATE only when you intentionally want to replace a working credential.
+                    {tr(
+                      'Настроенные ключи остаются скрытыми в общих дашбордах. Разблокируйте инструменты оператора и используйте ROTATE только когда осознанно хотите заменить рабочий ключ.',
+                      'Configured keys stay hidden for shared dashboards. Unlock operator tools, then use ROTATE only when you intentionally want to replace a working credential.',
+                    )}
                   </div>
                   {envMeta && (
                     <div className="pl-5 text-[12px] font-mono text-[var(--text-muted)] leading-relaxed space-y-0.5">
                       <div>
-                        <span className="text-cyan-500/70">local key store:</span>{' '}
+                        <span className="text-cyan-500/70">{tr('локальное хранилище ключей:', 'local key store:')}</span>{' '}
                         <span className="text-cyan-300 break-all select-all">
                           {envMeta.operator_keys_env_path || envMeta.env_path}
                         </span>{' '}
                         {envMeta.operator_keys_env_path_exists || envMeta.env_path_exists ? (
-                          <span className="text-green-400/80">[exists]</span>
+                          <span className="text-green-400/80">{tr('[существует]', '[exists]')}</span>
                         ) : (
-                          <span className="text-amber-400/80">[will be created on first save]</span>
+                          <span className="text-amber-400/80">
+                            {tr('[будет создано при первом сохранении]', '[will be created on first save]')}
+                          </span>
                         )}
                         {envMeta.env_path_exists && !envMeta.env_path_writable && (
-                          <span className="text-red-400/90"> [NOT WRITABLE — edit by hand]</span>
+                          <span className="text-red-400/90">
+                            {' '}
+                            {tr('[НЕТ ПРАВ НА ЗАПИСЬ - отредактируйте вручную]', '[NOT WRITABLE — edit by hand]')}
+                          </span>
                         )}
                       </div>
                       {envMeta.env_example_path_exists && (
                         <div>
-                          <span className="text-cyan-500/70">template:</span>{' '}
+                          <span className="text-cyan-500/70">{tr('шаблон:', 'template:')}</span>{' '}
                           <span className="text-cyan-300/80 break-all select-all">
                             {envMeta.env_example_path}
                           </span>{' '}
                           <span className="text-[var(--text-muted)]">
-                            (copy to .env and fill in your keys; comments above each entry list the registration URL)
+                            {tr(
+                              '(скопируйте в .env и заполните ключи; в комментариях над каждой записью указан URL регистрации)',
+                              '(copy to .env and fill in your keys; comments above each entry list the registration URL)',
+                            )}
                           </span>
                         </div>
                       )}
@@ -2315,11 +2503,10 @@ const SettingsPanel = React.memo(function SettingsPanel({
                             <span
                               className={`text-[13px] font-mono tracking-widest font-bold px-2 py-0.5 border ${colorClass}`}
                             >
-                              {category.toUpperCase()}
+                              {categoryLabel(category).toUpperCase()}
                             </span>
                             <span className="text-sm text-[var(--text-muted)] font-mono">
-                              {categoryApis.length}{' '}
-                              {categoryApis.length === 1 ? 'service' : 'services'}
+                              {categoryApis.length} {serviceCountLabel(categoryApis.length)}
                             </span>
                           </div>
                           {isExpanded ? (
@@ -2347,23 +2534,23 @@ const SettingsPanel = React.memo(function SettingsPanel({
                                         <Key size={10} className="text-yellow-500" />
                                       )}
                                       <span className="text-xs font-mono text-[var(--text-primary)] font-medium">
-                                        {api.name}
+                                        {localizedApiCopy(api).name}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                       {api.has_key ? (
                                         api.is_set ? (
                                           <span className="text-[12px] font-mono px-1.5 py-0.5 border border-green-500/30 text-green-400 bg-green-950/20">
-                                            KEY SET
+                                            {tr('КЛЮЧ ЗАДАН', 'KEY SET')}
                                           </span>
                                         ) : (
                                           <span className="text-[12px] font-mono px-1.5 py-0.5 border border-yellow-500/30 text-yellow-400 bg-yellow-950/20">
-                                            MISSING
+                                            {tr('ОТСУТСТВУЕТ', 'MISSING')}
                                           </span>
                                         )
                                       ) : (
                                         <span className="text-[12px] font-mono px-1.5 py-0.5 border border-[var(--border-primary)] text-[var(--text-muted)]">
-                                          PUBLIC
+                                          {tr('ПУБЛИЧНЫЙ', 'PUBLIC')}
                                         </span>
                                       )}
                                       {api.url && (
@@ -2380,7 +2567,7 @@ const SettingsPanel = React.memo(function SettingsPanel({
                                     </div>
                                   </div>
                                   <p className="text-sm text-[var(--text-muted)] font-mono leading-relaxed mb-2">
-                                    {api.description}
+                                    {localizedApiCopy(api).description}
                                   </p>
                                   {api.has_key && (
                                     <div className="mt-2 space-y-2 text-[12px] font-mono">
@@ -2389,10 +2576,13 @@ const SettingsPanel = React.memo(function SettingsPanel({
                                           <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0 flex items-center gap-2">
                                               <span className="px-2 py-0.5 border border-green-500/40 bg-green-950/20 text-green-300 tracking-wider">
-                                                CONFIGURED
+                                                {tr('НАСТРОЕНО', 'CONFIGURED')}
                                               </span>
                                               <span className="text-[var(--text-muted)] leading-relaxed">
-                                                Secret hidden. Stored write-only on this backend as{' '}
+                                                {tr(
+                                                  'Секрет скрыт. Хранится только на запись в этом бэкенде как',
+                                                  'Secret hidden. Stored write-only on this backend as',
+                                                )}{' '}
                                                 <span className="text-cyan-300 select-all break-all">
                                                   {api.env_key}
                                                 </span>
@@ -2422,24 +2612,31 @@ const SettingsPanel = React.memo(function SettingsPanel({
                                                     : 'border-[var(--border-primary)] text-[var(--text-muted)] hover:border-yellow-500/30 hover:text-yellow-300/80'
                                                 }`}
                                               >
-                                                {apiKeyEditing[api.env_key] ? 'CANCEL' : 'ROTATE'}
+                                                {apiKeyEditing[api.env_key]
+                                                  ? tr('ОТМЕНА', 'CANCEL')
+                                                  : tr('РОТАЦИЯ', 'ROTATE')}
                                               </button>
                                             )}
                                           </div>
                                           {!(nativeProtected || adminSessionReady) && (
                                             <div className="text-[11px] text-yellow-300/70 leading-relaxed">
-                                              Operator tools are locked. Viewers can see source status
-                                              but cannot replace saved credentials.
+                                              {tr(
+                                                'Инструменты оператора заблокированы. Просмотрщики видят статус источников, но не могут заменить сохранённые ключи.',
+                                                'Operator tools are locked. Viewers can see source status but cannot replace saved credentials.',
+                                              )}
                                             </div>
                                           )}
                                         </div>
                                       ) : (
                                         <div className="flex items-center gap-2">
                                           <span className="px-2 py-0.5 border border-amber-500/40 bg-amber-950/20 text-amber-300 tracking-wider">
-                                            NOT CONFIGURED
+                                            {tr('НЕ НАСТРОЕНО', 'NOT CONFIGURED')}
                                           </span>
                                           <span className="text-[var(--text-muted)]">
-                                            Save {api.env_key} here to enable this source.
+                                            {tr(
+                                              `Сохраните ${api.env_key} здесь, чтобы включить этот источник.`,
+                                              `Save ${api.env_key} here to enable this source.`,
+                                            )}
                                           </span>
                                         </div>
                                       )}
@@ -2457,8 +2654,8 @@ const SettingsPanel = React.memo(function SettingsPanel({
                                             }}
                                             placeholder={
                                               api.is_set
-                                                ? 'Enter replacement key...'
-                                                : `Enter ${api.env_key}...`
+                                                ? tr('Введите новый ключ...', 'Enter replacement key...')
+                                                : tr(`Введите ${api.env_key}...`, `Enter ${api.env_key}...`)
                                             }
                                             className="min-w-0 flex-1 bg-[var(--bg-primary)] border border-[var(--border-primary)] px-2 py-1.5 text-sm text-[var(--text-primary)] outline-none focus:border-cyan-500/70 placeholder:text-[var(--text-muted)]/50"
                                             autoComplete="off"
@@ -2475,7 +2672,9 @@ const SettingsPanel = React.memo(function SettingsPanel({
                                             className="h-8 px-3 border border-cyan-500/40 bg-cyan-950/20 text-cyan-300 hover:bg-cyan-500/15 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 tracking-widest"
                                           >
                                             <Save size={12} />
-                                            {apiKeySaving === api.env_key ? 'SAVING' : 'SAVE'}
+                                            {apiKeySaving === api.env_key
+                                              ? tr('СОХРАНЕНИЕ', 'SAVING')
+                                              : tr('СОХРАНИТЬ', 'SAVE')}
                                           </button>
                                         </div>
                                       )}
@@ -2494,8 +2693,11 @@ const SettingsPanel = React.memo(function SettingsPanel({
                 {/* Footer */}
                 <div className="p-4 border-t border-[var(--border-primary)]/80">
                   <div className="flex items-center justify-between text-[13px] text-[var(--text-muted)] font-mono">
-                    <span>{apis.length} REGISTERED APIs</span>
-                    <span>{apis.filter((a) => a.has_key && a.is_set).length} KEYS CONFIGURED</span>
+                    <span>{apis.length} {tr('ЗАРЕГИСТРИРОВАННЫХ API', 'REGISTERED APIs')}</span>
+                    <span>
+                      {apis.filter((a) => a.has_key && a.is_set).length}{' '}
+                      {tr('КЛЮЧЕЙ НАСТРОЕНО', 'KEYS CONFIGURED')}
+                    </span>
                   </div>
                 </div>
               </>

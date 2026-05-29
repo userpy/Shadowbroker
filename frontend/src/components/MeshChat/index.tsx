@@ -42,6 +42,7 @@ import { RepBadge } from './RepBadge';
 import { timeAgo } from './utils';
 import { MSG_COLORS } from './types';
 import type { MeshChatProps, Tab } from './types';
+import { useTranslation } from '@/i18n';
 
 function describeGateCompatConsentPrompt(action: string): string {
   switch (String(action || '')) {
@@ -90,6 +91,9 @@ function describeGateCompatReason(reason: string, gateId: string): string {
 
 const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
   const ctrl = useMeshChatController(props);
+  const { locale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = (ru: string, en: string) => (isRu ? ru : en);
   const {
     // UI state
     expanded,
@@ -345,11 +349,23 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
   const meshActivationText =
     publicMeshBlockedByWormhole
       ? hasStoredPublicLaneIdentity
-        ? 'Wormhole is active. Turning MeshChat on will turn Wormhole off and use your saved public mesh key.'
-        : 'Wormhole is active. Turning MeshChat on will turn Wormhole off and mint a separate public mesh key.'
+        ? tr(
+            'Wormhole активен. Включение MeshChat выключит Wormhole и использует ваш сохранённый публичный mesh-ключ.',
+            'Wormhole is active. Turning MeshChat on will turn Wormhole off and use your saved public mesh key.',
+          )
+        : tr(
+            'Wormhole активен. Включение MeshChat выключит Wormhole и выпустит отдельный публичный mesh-ключ.',
+            'Wormhole is active. Turning MeshChat on will turn Wormhole off and mint a separate public mesh key.',
+          )
       : hasStoredPublicLaneIdentity
-        ? 'MeshChat is off. Turn it on to use your saved public mesh key.'
-        : 'Public mesh posting needs a mesh key. One tap gets you a fresh address.';
+        ? tr(
+            'MeshChat выключен. Включите его, чтобы использовать сохранённый публичный mesh-ключ.',
+            'MeshChat is off. Turn it on to use your saved public mesh key.',
+          )
+        : tr(
+            'Для публикации в публичный mesh нужен mesh-ключ. Один тап выдаст новый адрес.',
+            'Public mesh posting needs a mesh key. One tap gets you a fresh address.',
+          );
   const handleMeshActivationAction = () => {
     if (hasStoredPublicLaneIdentity) {
       void handleActivatePublicMeshSession();
@@ -377,19 +393,19 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
     window.setTimeout(() => inputRef.current?.focus(), 0);
   };
   const meshActivationLabel = identityWizardBusy
-    ? 'GETTING MESH KEY'
+    ? tr('ПОЛУЧЕНИЕ MESH-КЛЮЧА', 'GETTING MESH KEY')
     : hasStoredPublicLaneIdentity
-      ? 'TURN ON MESH'
+      ? tr('ВКЛЮЧИТЬ MESH', 'TURN ON MESH')
       : publicMeshBlockedByWormhole
-        ? 'TURN OFF WORMHOLE FOR MESH'
-        : 'GET MESH KEY';
+        ? tr('ВЫКЛЮЧИТЬ WORMHOLE ДЛЯ MESH', 'TURN OFF WORMHOLE FOR MESH')
+        : tr('ПОЛУЧИТЬ MESH-КЛЮЧ', 'GET MESH KEY');
   const meshActivationSideLabel = identityWizardBusy
-    ? 'WORKING...'
+    ? tr('ОБРАБОТКА...', 'WORKING...')
     : hasStoredPublicLaneIdentity
-      ? 'USE SAVED KEY'
+      ? tr('ИСПОЛЬЗОВАТЬ СОХРАНЁННЫЙ', 'USE SAVED KEY')
       : publicMeshBlockedByWormhole
-        ? 'AUTO DISABLE'
-        : 'ONE TAP';
+        ? tr('АВТО-ОТКЛЮЧЕНИЕ', 'AUTO DISABLE')
+        : tr('ОДИН ТАП', 'ONE TAP');
 
   return (
     <div
@@ -1172,7 +1188,7 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
                             : 'border-[var(--border-primary)]/40 text-[var(--text-muted)] hover:text-green-300'
                         }`}
                       >
-                        CHANNEL
+                        {tr('КАНАЛ', 'CHANNEL')}
                       </button>
                       <button
                         onClick={() => setMeshView('inbox')}
@@ -1182,7 +1198,7 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
                             : 'border-[var(--border-primary)]/40 text-[var(--text-muted)] hover:text-amber-300'
                         }`}
                       >
-                        INBOX
+                        {tr('ВХОДЯЩИЕ', 'INBOX')}
                       </button>
                       <button
                         onClick={() => setMeshView('settings')}
@@ -1192,7 +1208,7 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
                             : 'border-[var(--border-primary)]/40 text-[var(--text-muted)] hover:text-cyan-300'
                         }`}
                       >
-                        SETTINGS
+                        {tr('НАСТРОЙКИ', 'SETTINGS')}
                       </button>
                       <button
                         onClick={() => {
@@ -1205,7 +1221,7 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
                             : 'border-[var(--border-primary)]/40 text-[var(--text-muted)] hover:text-green-300'
                         }`}
                       >
-                        MESSAGE
+                        {tr('СООБЩЕНИЕ', 'MESSAGE')}
                       </button>
                     </div>
                   </div>
@@ -1405,7 +1421,10 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
                     )}
                     {!canUsePublicMeshInput && meshView !== 'settings' && (
                       <div className="text-[12px] font-mono text-green-300/70 text-center py-4 leading-[1.65]">
-                        MeshChat is off. Turn it on to connect the public mesh lane.
+                        {tr(
+                          'MeshChat выключен. Включите его, чтобы подключить публичный mesh-канал.',
+                          'MeshChat is off. Turn it on to connect the public mesh lane.',
+                        )}
                       </div>
                     )}
                     {canUsePublicMeshInput && meshView === 'channel' && filteredMeshMessages.length === 0 && (
@@ -2334,10 +2353,10 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
                             ? `→ MESH / TO ${meshDirectTarget.toUpperCase()} / FROM ${activePublicMeshAddress.toUpperCase()}`
                             : `→ MESH / ${meshRegion} / ${meshChannel} / ${activePublicMeshAddress.toUpperCase()}`
                           : publicMeshBlockedByWormhole
-                            ? '→ MESH BLOCKED / WORMHOLE ACTIVE'
+                            ? tr('→ MESH ЗАБЛОКИРОВАН / WORMHOLE АКТИВЕН', '→ MESH BLOCKED / WORMHOLE ACTIVE')
                           : hasStoredPublicLaneIdentity
-                            ? '→ MESH OFF'
-                            : '→ MESH LOCKED'
+                            ? tr('→ MESH ВЫКЛЮЧЕН', '→ MESH OFF')
+                            : tr('→ MESH ЗАБЛОКИРОВАН', '→ MESH LOCKED')
                         : activeTab === 'dms' && secureDmBlocked
                           ? '→ DEAD DROP LOCKED'
                         : dmView === 'chat' && selectedContact
@@ -2412,7 +2431,9 @@ const MeshChat = React.memo(function MeshChat(props: MeshChatProps) {
                       <Send size={11} />
                       DIRECT TO {meshDirectTarget.toUpperCase()}
                     </span>
-                    <span className="text-[12px] font-mono text-amber-200/70">RETURN TO CHANNEL</span>
+                    <span className="text-[12px] font-mono text-amber-200/70">
+                      {tr('ВЕРНУТЬСЯ В КАНАЛ', 'RETURN TO CHANNEL')}
+                    </span>
                   </button>
                 ) : activeTab === 'infonet' &&
                   privateInfonetReady &&

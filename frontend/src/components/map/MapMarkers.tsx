@@ -2,6 +2,7 @@ import React from 'react';
 import { Marker } from 'react-map-gl/maplibre';
 import type { Earthquake, SelectedEntity, Ship, TrackedFlight, UAV } from '@/types/dashboard';
 import type { SpreadAlertItem } from '@/utils/alertSpread';
+import { useTranslation } from '@/i18n';
 
 // Shared monospace label style base
 const LABEL_BASE: React.CSSProperties = {
@@ -128,6 +129,10 @@ interface CarrierLabelsProps {
 }
 
 export function CarrierLabels({ ships, inView, interpShip }: CarrierLabelsProps) {
+  const { locale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = (ru: string, en: string) => (isRu ? ru : en);
+
   return (
     <>
       {ships.map((s, i) => {
@@ -156,7 +161,7 @@ export function CarrierLabels({ ships, inView, interpShip }: CarrierLabelsProps)
               </div>
               {s.estimated && (
                 <div style={{ color: '#ff6644', fontSize: '8px', letterSpacing: '1.5px' }}>
-                  EST. POSITION — OSINT
+                  {tr('РАСЧ. ПОЗИЦИЯ - ОСИНТ', 'EST. POSITION — OSINT')}
                 </div>
               )}
             </div>
@@ -175,6 +180,10 @@ interface TrackedYachtLabelsProps {
 }
 
 export function TrackedYachtLabels({ ships, inView, interpShip }: TrackedYachtLabelsProps) {
+  const { locale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = (ru: string, en: string) => (isRu ? ru : en);
+
   return (
     <>
       {ships.map((s, i) => {
@@ -199,7 +208,7 @@ export function TrackedYachtLabels({ ships, inView, interpShip }: TrackedYachtLa
                 whiteSpace: 'nowrap',
               }}
             >
-              {s.yacht_owner || s.name || 'TRACKED YACHT'}
+              {s.yacht_owner || s.name || tr('ОТСЛЕЖИВАЕМАЯ ЯХТА', 'TRACKED YACHT')}
             </div>
           </Marker>
         );
@@ -313,6 +322,10 @@ export function ThreatMarkers({
   onEntityClick,
   onDismiss,
 }: ThreatMarkerProps) {
+  const { locale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = (ru: string, en: string) => (isRu ? ru : en);
+
   return (
     <>
       {spreadAlerts.map((n) => {
@@ -445,7 +458,7 @@ export function ThreatMarkers({
                   </button>
                 )}
                 <div style={{ fontSize: '14px', letterSpacing: '1.5px', textTransform: 'uppercase' as const }}>
-                  !! ALERT LVL {score} !!
+                  !! {tr('ТРЕВОГА УР', 'ALERT LVL')} {score} !!
                 </div>
                 <div
                   style={{
@@ -462,7 +475,7 @@ export function ThreatMarkers({
                   <div
                     style={{ color: riskColor, opacity: 0.9, fontSize: '10px', marginTop: '4px', letterSpacing: '0.5px' }}
                   >
-                    [+{count - 1} ACTIVE THREATS IN AREA]
+                    [+{count - 1} {tr('АКТИВНЫХ УГРОЗ В РАЙОНЕ', 'ACTIVE THREATS IN AREA')}]
                   </div>
                 )}
               </div>

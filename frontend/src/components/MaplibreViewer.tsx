@@ -168,6 +168,7 @@ import { spreadAlertItems } from '@/utils/alertSpread';
 import { useViewportBounds } from '@/components/map/hooks/useViewportBounds';
 import { MeasurementLayers } from '@/components/map/layers/MeasurementLayers';
 import { buildCctvProxyUrl } from '@/lib/cctvProxy';
+import { useTranslation } from '@/i18n';
 import { CctvFullscreenModal } from '@/components/MaplibreViewer/CctvFullscreenModal';
 import { SatellitePopup } from '@/components/MaplibreViewer/popups/SatellitePopup';
 import { ShipPopup } from '@/components/MaplibreViewer/popups/ShipPopup';
@@ -408,6 +409,9 @@ const MaplibreViewer = ({
   const mapRef = useRef<MapRef>(null);
   const mapInitRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const { locale } = useTranslation();
+  const isRu = locale === 'ru';
+  const tr = useCallback((ru: string, en: string) => (isRu ? ru : en), [isRu]);
   const { theme } = useTheme();
   const mapThemeStyle = useMemo<maplibregl.StyleSpecification>(
     () => (theme === 'light' ? lightStyle : darkStyle) as maplibregl.StyleSpecification,
@@ -5540,7 +5544,7 @@ const MaplibreViewer = ({
               <div className="bg-[var(--bg-secondary)]/90 backdrop-blur-md border border-orange-800 rounded-lg flex flex-col z-[100] font-mono shadow-[0_4px_30px_rgba(255,140,0,0.4)] pointer-events-auto overflow-hidden w-[440px]">
                 <div className="p-2 border-b border-orange-500/30 bg-orange-950/40 flex justify-between items-center">
                   <h2 className="text-[11px] tracking-widest font-bold text-orange-400 flex items-center gap-1">
-                    <AlertTriangle size={13} className="text-orange-400" /> NEWS ON THE GROUND
+                    <AlertTriangle size={13} className="text-orange-400" /> {tr('НОВОСТИ С МЕСТА', 'NEWS ON THE GROUND')}
                   </h2>
                   <button
                     onClick={() => onEntityClick?.(null)}
@@ -5551,15 +5555,15 @@ const MaplibreViewer = ({
                 </div>
                 <div className="p-3 flex flex-col gap-2">
                   <div className="flex justify-between items-center border-b border-[var(--border-primary)] pb-1">
-                    <span className="text-[var(--text-muted)] text-[10px]">LOCATION</span>
+                    <span className="text-[var(--text-muted)] text-[10px]">{tr('ЛОКАЦИЯ', 'LOCATION')}</span>
                     <span className="text-white text-[12px] font-bold text-right ml-2 break-words max-w-[260px]">
-                      {item.properties?.name || 'UNKNOWN REGION'}
+                      {item.properties?.name || tr('НЕИЗВЕСТНЫЙ РЕГИОН', 'UNKNOWN REGION')}
                     </span>
                   </div>
                   {/* Enriched GDELT fields */}
                   {item.properties?.event_date && (
                     <div className="flex justify-between items-center border-b border-[var(--border-primary)] pb-1">
-                      <span className="text-[var(--text-muted)] text-[10px]">DATE</span>
+                      <span className="text-[var(--text-muted)] text-[10px]">{tr('ДАТА', 'DATE')}</span>
                       <span className="text-white text-[11px] font-bold">
                         {String(item.properties.event_date).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')}
                       </span>
@@ -5567,41 +5571,41 @@ const MaplibreViewer = ({
                   )}
                   {((item.properties?.actors?.length ?? 0) > 0) && (
                     <div className="flex justify-between items-center border-b border-[var(--border-primary)] pb-1">
-                      <span className="text-[var(--text-muted)] text-[10px]">ACTORS</span>
+                      <span className="text-[var(--text-muted)] text-[10px]">{tr('АКТОРЫ', 'ACTORS')}</span>
                       <span className="text-orange-300 text-[11px] font-bold text-right ml-2 max-w-[280px] truncate">
-                        {item.properties.actors!.join(' vs ')}
+                        {item.properties.actors!.join(tr(' против ', ' vs '))}
                       </span>
                     </div>
                   )}
                   {item.properties?.goldstein != null && item.properties.goldstein !== 0 && (
                     <div className="flex justify-between items-center border-b border-[var(--border-primary)] pb-1">
-                      <span className="text-[var(--text-muted)] text-[10px]">INTENSITY</span>
+                      <span className="text-[var(--text-muted)] text-[10px]">{tr('ИНТЕНСИВНОСТЬ', 'INTENSITY')}</span>
                       <span className={`text-[11px] font-bold ${item.properties.goldstein <= -5 ? 'text-red-400' : item.properties.goldstein <= -2 ? 'text-orange-400' : 'text-yellow-400'}`}>
-                        {item.properties.goldstein > 0 ? '+' : ''}{item.properties.goldstein} Goldstein
+                        {item.properties.goldstein > 0 ? '+' : ''}{item.properties.goldstein} {tr('Голдштейн', 'Goldstein')}
                       </span>
                     </div>
                   )}
                   <div className="flex gap-3 border-b border-[var(--border-primary)] pb-1">
                     <div className="flex-1 flex justify-between items-center">
-                      <span className="text-[var(--text-muted)] text-[10px]">EVENTS</span>
+                      <span className="text-[var(--text-muted)] text-[10px]">{tr('СОБЫТИЯ', 'EVENTS')}</span>
                       <span className="text-white text-[11px] font-bold">{item.properties?.count || 1}</span>
                     </div>
                     {(item.properties?.num_sources ?? 0) > 0 && (
                       <div className="flex-1 flex justify-between items-center">
-                        <span className="text-[var(--text-muted)] text-[10px]">SOURCES</span>
+                        <span className="text-[var(--text-muted)] text-[10px]">{tr('ИСТОЧНИКИ', 'SOURCES')}</span>
                         <span className="text-white text-[11px] font-bold">{item.properties.num_sources}</span>
                       </div>
                     )}
                     {(item.properties?.num_articles ?? 0) > 0 && (
                       <div className="flex-1 flex justify-between items-center">
-                        <span className="text-[var(--text-muted)] text-[10px]">ARTICLES</span>
+                        <span className="text-[var(--text-muted)] text-[10px]">{tr('СТАТЬИ', 'ARTICLES')}</span>
                         <span className="text-white text-[11px] font-bold">{item.properties.num_articles}</span>
                       </div>
                     )}
                   </div>
                   <div className="flex flex-col gap-1 mt-1">
                     <span className="text-[var(--text-muted)] text-[10px]">
-                      LATEST REPORTS: ({(item.properties?._urls_list || []).length})
+                      {tr('ПОСЛЕДНИЕ СООБЩЕНИЯ', 'LATEST REPORTS')}: ({(item.properties?._urls_list || []).length})
                     </span>
                     <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto styled-scrollbar mt-1">
                       {(() => {
@@ -5611,7 +5615,7 @@ const MaplibreViewer = ({
                         if (urls.length === 0)
                           return (
                             <span className="text-[var(--text-muted)] text-[11px]">
-                              No articles available.
+                              {tr('Нет доступных статей.', 'No articles available.')}
                             </span>
                           );
                         return urls.map((url: string, idx: number) => {
@@ -5634,7 +5638,7 @@ const MaplibreViewer = ({
                               style={{ pointerEvents: 'all' }}
                             >
                               <span className="text-orange-400 text-[13px] font-bold leading-snug group-hover:text-orange-300 block">
-                                {headline || domain || 'View Article'}
+                                {headline || domain || tr('Открыть статью', 'View Article')}
                               </span>
                               {snippet && (
                                 <span className="text-[var(--text-secondary)] text-[11px] leading-relaxed block mt-1">

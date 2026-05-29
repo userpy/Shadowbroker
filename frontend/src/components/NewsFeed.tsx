@@ -11,6 +11,7 @@ import { useDataKeys } from '@/hooks/useDataStore';
 import { API_BASE } from '@/lib/api';
 import { lookupShodanHost } from '@/lib/shodanClient';
 import type { ShodanHost } from '@/types/shodan';
+import { useTranslation } from '@/i18n';
 
 // Format time from pubish string "Tue, 24 Feb 2026 15:30:00 GMT" to "15:30"
 function formatTime(pubDate: string) {
@@ -112,6 +113,14 @@ const AIRCRAFT_WIKI: Record<string, string> = {
     SU95: 'Sukhoi Superjet 100', AN12: 'Antonov An-12', AN26: 'Antonov An-26',
     IL76: 'Ilyushin Il-76', IL96: 'Ilyushin Il-96',
     A400: 'Airbus A400M Atlas', C295: 'Airbus C-295',
+};
+
+const THREAT_LEVEL_RU: Record<string, string> = {
+    SEVERE: 'КРИТИЧЕСКИЙ',
+    HIGH: 'ВЫСОКИЙ',
+    ELEVATED: 'ПОВЫШЕННЫЙ',
+    GUARDED: 'ОХРАНЯЕМЫЙ',
+    GREEN: 'НИЗКИЙ',
 };
 
 /**
@@ -320,6 +329,11 @@ function EmissionsEstimateBlock({ flight }: { flight: any }) {
 }
 
 function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, onArticleClick }: { selectedEntity?: SelectedEntity | null, regionDossier?: RegionDossier | null, regionDossierLoading?: boolean, onArticleClick?: (idx: number, lat?: number, lng?: number, title?: string) => void }) {
+    const { locale } = useTranslation();
+    const isRu = locale === 'ru';
+    const tr = useCallback((ru: string, en: string) => (isRu ? ru : en), [isRu]);
+    const threatLevelLabel = useCallback((level: string) => (isRu ? (THREAT_LEVEL_RU[level] || level) : level), [isRu]);
+
     const data = useDataKeys([
       'news', 'fimi', 'commercial_flights', 'private_flights', 'private_jets',
       'military_flights', 'tracked_flights', 'ships', 'gdelt', 'liveuamap',
@@ -1445,7 +1459,7 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                     <div className="flex items-center gap-2">
                         <AlertTriangle size={16} className="text-cyan-400" />
                         <span className="text-[12px] text-cyan-400 font-mono tracking-widest font-bold">
-                            GLOBAL THREAT INTERCEPT
+                            {tr('ГЛОБАЛЬНЫЙ ПЕРЕХВАТ УГРОЗ', 'GLOBAL THREAT INTERCEPT')}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1487,8 +1501,8 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                             exit={{ height: 0, opacity: 0 }}
                             className="text-[10px] text-cyan-500/80 mt-1 flex items-center justify-between font-bold relative z-10"
                         >
-                            <span className="px-1 border border-cyan-500/30">SYS.STATUS: MONITORING</span>
-                            <span className="flex items-center gap-1"><Clock size={10} /> {data?.last_updated ? formatTime(data.last_updated) : "SCANNING"}</span>
+                            <span className="px-1 border border-cyan-500/30">{tr('SYS.STATUS: МОНИТОРИНГ', 'SYS.STATUS: MONITORING')}</span>
+                            <span className="flex items-center gap-1"><Clock size={10} /> {data?.last_updated ? formatTime(data.last_updated) : tr('СКАНИРОВАНИЕ', 'SCANNING')}</span>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -1516,7 +1530,7 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                                 data.threat_level.level === 'SEVERE' || data.threat_level.level === 'HIGH' ? 'animate-pulse' : ''
                             }`} style={{ backgroundColor: data.threat_level.color }} />
                             <span className="text-[12px] font-bold tracking-wider" style={{ color: data.threat_level.color }}>
-                                THREAT: {data.threat_level.level}
+                                {tr('УГРОЗА', 'THREAT')}: {threatLevelLabel(data.threat_level.level)}
                             </span>
                             <span className="text-[12px] text-[var(--text-muted)] ml-auto">
                                 {data.threat_level.score}/100
@@ -1821,7 +1835,7 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
                                 >
                                     <div className="flex items-center justify-between text-[12px] text-[var(--text-secondary)] uppercase tracking-widest">
                                         <span className="font-bold flex items-center gap-1 text-white">
-                                            {isBreaking && <span className="text-red-400 mr-1">BREAKING</span>}
+                                            {isBreaking && <span className="text-red-400 mr-1">{tr('СРОЧНО', 'BREAKING')}</span>}
                                             &gt;_ {item.source}
                                         </span>
                                         <span>[{item.published ? formatTime(item.published) : ''}]</span>
@@ -1851,7 +1865,7 @@ function NewsFeedInner({ selectedEntity, regionDossier, regionDossierLoading, on
 
                                     <div className="flex items-center gap-1.5 mt-1 relative z-10 flex-wrap">
                                         <span className={`text-[11px] font-bold font-mono px-1.5 py-0.5 rounded-sm border ${badgeClass}`}>
-                                            {isBreaking ? 'BREAKING' : `LVL: ${item.risk_score}/10`}
+                                            {isBreaking ? tr('СРОЧНО', 'BREAKING') : `${tr('УР', 'LVL')}: ${item.risk_score}/10`}
                                         </span>
                                         {item.sentiment != null && (
                                             <span className={`text-[11px] font-bold font-mono px-1.5 py-0.5 rounded-sm border ${
